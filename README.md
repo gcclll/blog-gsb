@@ -1,9 +1,9 @@
-[![Build Status](https://travis-ci.org/maxpou/gatsby-starter-morning-dew.svg?branch=master)](https://travis-ci.org/maxpou/gatsby-starter-morning-dew) [![Netlify Status](https://api.netlify.com/api/v1/badges/d68027bd-19b5-44fd-a2a3-d1f05fc8201e/deploy-status)](https://app.netlify.com/sites/gatsby-starter-morning-dew/deploys) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier) [![Maintainability](https://api.codeclimate.com/v1/badges/e09f1ac1a5cdb2987a6f/maintainability)](https://codeclimate.com/github/maxpou/gatsby-starter-morning-dew/maintainability) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+[![Build Status](https://travis-ci.org/maxpou/gatsby-starter-morning-dew.svg?branch=master)](https://travis-ci.org/maxpou/gatsby-starter-morning-dew) [![Netlify Status](https://api.netlify.com/api/v1/badges/395cd55b-fc22-4d2c-bb67-5e5a0d40f99c/deploy-status)](https://app.netlify.com/sites/elegant-ramanujan-169679/deploys) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier) [![Maintainability](https://api.codeclimate.com/v1/badges/e09f1ac1a5cdb2987a6f/maintainability)](https://codeclimate.com/github/maxpou/gatsby-starter-morning-dew/maintainability) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
 
 # gatsby-starter-morning-dew
 
-:rocket: A gatsby-starter-morning-dew is a Gatsby starter to build lightning-fast websites!  
+:rocket: A gatsby-starter-morning-dew is a Gatsby starter to build lightning-fast websites!
 :dizzy: You can also use gatsby-starter-morning-dew as a Gatsby Theme
 
 [Demo website.](https://maxpou.github.io/gatsby-starter-morning-dew/)
@@ -20,7 +20,7 @@
 - :iphone: Mobile Friendly (Responsive design)
 - :sparkles: PWA ready
   - :airplane: Offline support
-  - :page_with_curl: Manifest support 
+  - :page_with_curl: Manifest support
 - [:wrench: Fully configurable (see data/siteConfig.js)](./data/siteConfig.js)
 - :speech_balloon: Disqus support
 - :nail_care: css-in-js (with [styled-components v5](https://www.styled-components.com))
@@ -37,8 +37,8 @@
 
 ## Installation (starter)
 
-* with Gatsby-cli: 
-  
+* with Gatsby-cli:
+
 ```bash
 npm install --global gatsby-cli
 gatsby new gatsby-blog https://github.com/maxpou/gatsby-starter-morning-dew
@@ -86,8 +86,8 @@ You can also use `gatsby-starter-morning-dew` as a [Gatsby theme](https://www.ga
       },
   ],
   ```
-3. Add an image called `baymax.png` in `content/images/baymax.png`.  
-🐞This is due to a theme limitations.  
+3. Add an image called `baymax.png` in `content/images/baymax.png`.
+🐞This is due to a theme limitations.
 😬 Don't worry, this picture will not appear on your website!
 
 Need more details? Checkout:
