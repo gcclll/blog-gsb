@@ -12,7 +12,7 @@ cover: ./cover.jpeg
 imageShare: ./cover.jpeg
 tags: ['fake']
 translations:
-  - link: 'https://www.maxpou.fr/about'
+  - link: 'https://blog.ii6g.com/about'
     language: 'french'
     hreflang: fr
 ---

@@ -78,13 +78,11 @@ module.exports = {
   authorAvatar: 'avatar.jpeg', // file in content/images
   defaultLang: 'en', // show flag if lang is not default. Leave empty to enable flags in post lists
   authorDescription: `
-  For the last decade, Maxence Poutord has worked with a variety of web technologies. He is currently focused on front-end development.
-  On his day to day job, he is working as a senior front-end engineer at VSware. He is also a frequent tech speaker and a mentor.
-  As a new digital nomad, he is living where the WIFI and sun is 😎 <br>
-  Do you want to know more? <a href="https://www.maxpou.fr/about" target="_blank">Visit my website!</a>
+  呵呵o(*￣︶￣*)o 😎 <br>
+  Do you want to know more? <a href="https://blog.ii6g.com/about" target="_blank">Visit my website!</a>
   `,
-  siteUrl: 'https://maxpou.github.io/',
-  disqusSiteUrl: 'https://www.maxpou.fr/',
+  siteUrl: 'https://blog.ii6g.com/',
+  disqusSiteUrl: 'https://blog.ii6g.com/',
   // Prefixes all links. For cases when deployed to maxpou.fr/gatsby-starter-morning-dew/
   pathPrefix: '/gatsby-starter-morning-dew', // Note: it must *not* have a trailing slash.
   siteCover: 'cover-baymax.jpeg', // file in content/images
@@ -143,7 +141,7 @@ module.exports = {
         },
         {
           label: 'Website',
-          url: 'https://www.maxpou.fr',
+          url: 'https://blog.ii6g.com',
         },
         {
           label: 'Twitter',

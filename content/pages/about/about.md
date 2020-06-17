@@ -12,7 +12,7 @@ disqus: true
 
 A gatsby-starter-morning-dew is a Gatsby theme/starter to build lightning-fast websites!
 
-[Demo website.](https://maxpou.github.io/gatsby-starter-morning-dew/)
+[Demo website.](https://blog.ii6g.com/gatsby-starter-morning-dew/)
 
 ![screenshot](https://i.imgur.com/Tv4SFqT.png)
 
