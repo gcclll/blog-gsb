@@ -2,13 +2,13 @@ module.exports = {
   siteMetadata: {
     title: `Gatsby Starter Blog`,
     author: {
-      name: `Kyle Mathews`,
-      summary: `who lives and works in San Francisco building useful things.`,
+      name: `ZhiCheng Lee(若叶知秋)`,
+      summary: `中国人。`,
     },
-    description: `A starter blog demonstrating what Gatsby can do.`,
-    siteUrl: `https://gatsby-starter-blog-demo.netlify.app/`,
+    description: `落叶相依浑似醉，潦倒何妨；悠悠岁月谁高歌，绝胜柳狂。`,
+    siteUrl: `https://blog.ii6g.com`,
     social: {
-      twitter: `kylemathews`,
+      twitter: `gccll_love`,
     },
   },
   plugins: [
