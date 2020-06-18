@@ -11,6 +11,8 @@ tags:
     - algorithm
 ---
 
+> 基于leetcode的算法学习记录文章，使用语言主要是 JavaScript，可能会有少于C/Python实现。
+
 # 字符串操作
 
 ## 删除字符串中重复的字符

@@ -60,7 +60,7 @@ module.exports = {
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
-        name: `Gatsby Starter Blog`,
+        name: `ZhiCheng Lee(若叶知秋)'s Blog(博客)`,
         short_name: `GatsbyJS`,
         start_url: `/`,
         background_color: `#ffffff`,
