@@ -1,6 +1,6 @@
 module.exports = {
   siteMetadata: {
-    title: `Gatsby Starter Blog`,
+    title: `若叶知秋`,
     author: {
       name: `ZhiCheng Lee(若叶知秋)`,
       summary: `中国人。`,
@@ -61,7 +61,7 @@ module.exports = {
       resolve: `gatsby-plugin-manifest`,
       options: {
         name: `ZhiCheng Lee(若叶知秋)'s Blog(博客)`,
-        short_name: `GatsbyJS`,
+        short_name: `lzc`,
         start_url: `/`,
         background_color: `#ffffff`,
         theme_color: `#663399`,
