@@ -1,207 +1,99 @@
-[![Build Status](https://travis-ci.org/maxpou/gatsby-starter-morning-dew.svg?branch=master)](https://travis-ci.org/maxpou/gatsby-starter-morning-dew) [![Netlify Status](https://api.netlify.com/api/v1/badges/395cd55b-fc22-4d2c-bb67-5e5a0d40f99c/deploy-status)](https://app.netlify.com/sites/elegant-ramanujan-169679/deploys) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier) [![Maintainability](https://api.codeclimate.com/v1/badges/e09f1ac1a5cdb2987a6f/maintainability)](https://codeclimate.com/github/maxpou/gatsby-starter-morning-dew/maintainability) [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+<!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
+<p align="center">
+  <a href="https://www.gatsbyjs.org">
+    <img alt="Gatsby" src="https://www.gatsbyjs.org/monogram.svg" width="60" />
+  </a>
+</p>
+<h1 align="center">
+  Gatsby's blog starter
+</h1>
 
+Kick off your project with this blog boilerplate. This starter ships with the main Gatsby configuration files you might need to get up and running blazing fast with the blazing fast app generator for React.
 
-# gatsby-starter-morning-dew
+_Have another more specific idea? You may want to check out our vibrant collection of [official and community-created starters](https://www.gatsbyjs.org/docs/gatsby-starters/)._
 
-:rocket: A gatsby-starter-morning-dew is a Gatsby starter to build lightning-fast websites!
-:dizzy: You can also use gatsby-starter-morning-dew as a Gatsby Theme
+## 🚀 Quick start
 
-[Demo website.](https://blog.ii6g.com/gatsby-starter-morning-dew/)
+1.  **Create a Gatsby site.**
 
-![screenshot](https://i.imgur.com/nPthSQy.png)
+    Use the Gatsby CLI to create a new site, specifying the blog starter.
 
-## Features
+    ```shell
+    # create a new Gatsby site using the blog starter
+    gatsby new my-blog-starter https://github.com/gatsbyjs/gatsby-starter-blog
+    ```
 
-- [:purple_heart: Gatsby v2](https://www.gatsbyjs.org/) / React 16
-- :mag: SEO optimized
-- :love_letter: Write posts/pages in Markdown or [MDX](https://mdxjs.com/)
-  - :art: Code syntax highlight
-  - :books: Multilang support/i18n (blog post)
-- :iphone: Mobile Friendly (Responsive design)
-- :sparkles: PWA ready
-  - :airplane: Offline support
-  - :page_with_curl: Manifest support
-- [:wrench: Fully configurable (see data/siteConfig.js)](./data/siteConfig.js)
-- :speech_balloon: Disqus support
-- :nail_care: css-in-js (with [styled-components v5](https://www.styled-components.com))
-- :bookmark: Groups post with tags
-- :bar_chart: Google Analytics support
-- :bird: post preview image generation (Twitter, Facebook...)
-- :gem: Developer tools:
-  - eslint
-  - prettier
-- :construction_worker: Travis CI support
+1.  **Start developing.**
 
+    Navigate into your new site’s directory and start it up.
 
-![Lighthouse scores (locally :bowtie:)](https://lighthouse.now.sh/?perf=100&pwa=100&a11y=100&bp=100&seo=100)
+    ```shell
+    cd my-blog-starter/
+    gatsby develop
+    ```
 
-## Installation (starter)
+1.  **Open the source code and start editing!**
 
-* with Gatsby-cli:
+    Your site is now running at `http://localhost:8000`!
 
-```bash
-npm install --global gatsby-cli
-gatsby new gatsby-blog https://github.com/maxpou/gatsby-starter-morning-dew
-```
+    _Note: You'll also see a second link: _`http://localhost:8000/___graphql`_. This is a tool you can use to experiment with querying your data. Learn more about using this tool in the [Gatsby tutorial](https://www.gatsbyjs.org/tutorial/part-five/#introducing-graphiql)._
 
-* without Gatsby-cli
+    Open the `my-blog-starter` directory in your code editor of choice and edit `src/pages/index.js`. Save your changes and the browser will update in real time!
 
-```bash
-git clone my-site git@github.com:maxpou/gatsby-starter-morning-dew.git
-cd my-site
-npm install
-```
+## 🧐 What's inside?
 
-Then run `npm run develop` to try it locally.
+A quick look at the top-level files and directories you'll see in a Gatsby project.
 
+    .
+    ├── node_modules
+    ├── src
+    ├── .gitignore
+    ├── .prettierrc
+    ├── gatsby-browser.js
+    ├── gatsby-config.js
+    ├── gatsby-node.js
+    ├── gatsby-ssr.js
+    ├── LICENSE
+    ├── package-lock.json
+    ├── package.json
+    └── README.md
 
-## Installation (theme)
+1.  **`/node_modules`**: This directory contains all of the modules of code that your project depends on (npm packages) are automatically installed.
 
-You can also use `gatsby-starter-morning-dew` as a [Gatsby theme](https://www.gatsbyjs.org/blog/2018-11-11-introducing-gatsby-themes/)!
+2.  **`/src`**: This directory will contain all of the code related to what you will see on the front-end of your site (what you see in the browser) such as your site header or a page template. `src` is a convention for “source code”.
 
-1. Add the theme
-  ```bash
-  npm install gatsby-starter-morning-dew
-  ```
-2. In your `gatsby-config.js`, add:
-  ```js
-  const config = require('./data/siteConfig')
-  // ...
-  plugins: [
-      {
-        resolve: "gatsby-starter-morning-dew",
-        options: {},
-      },
-      {
-        resolve: `gatsby-plugin-manifest`,
-        options: {
-          name: config.siteTitle,
-          short_name: config.siteTitle,
-          start_url: config.pathPrefix,
-          background_color: config.background_color,
-          theme_color: config.theme_color,
-          display: config.display,
-          icon: 'content/images/company-icon.png', // path to your image
-        },
-      },
-  ],
-  ```
-3. Add an image called `baymax.png` in `content/images/baymax.png`.
-🐞This is due to a theme limitations.
-😬 Don't worry, this picture will not appear on your website!
+3.  **`.gitignore`**: This file tells git which files it should not track / not maintain a version history for.
 
-Need more details? Checkout:
-* [maxpou.fr source](https://github.com/maxpou/maxpou.fr): Maxence Poutord's personnal blog;
-* [gatsby-groot source](https://github.com/maxpou/gatsby-groot/): a minimalist blog that use this template!
+4.  **`.prettierrc`**: This is a configuration file for [Prettier](https://prettier.io/). Prettier is a tool to help keep the formatting of your code consistent.
 
+5.  **`gatsby-browser.js`**: This file is where Gatsby expects to find any usage of the [Gatsby browser APIs](https://www.gatsbyjs.org/docs/browser-apis/) (if any). These allow customization/extension of default Gatsby settings affecting the browser.
 
-## Commands
+6.  **`gatsby-config.js`**: This is the main configuration file for a Gatsby site. This is where you can specify information about your site (metadata) like the site title and description, which Gatsby plugins you’d like to include, etc. (Check out the [config docs](https://www.gatsbyjs.org/docs/gatsby-config/) for more detail).
 
-```sh
-# working locally
-npm run dev
+7.  **`gatsby-node.js`**: This file is where Gatsby expects to find any usage of the [Gatsby Node APIs](https://www.gatsbyjs.org/docs/node-apis/) (if any). These allow customization/extension of default Gatsby settings affecting pieces of the site build process.
 
-# generate build
-npm run build
+8.  **`gatsby-ssr.js`**: This file is where Gatsby expects to find any usage of the [Gatsby server-side rendering APIs](https://www.gatsbyjs.org/docs/ssr-apis/) (if any). These allow customization of default Gatsby settings affecting server-side rendering.
 
-# format code
-npm run format
+9.  **`LICENSE`**: Gatsby is licensed under the MIT license.
 
-# lint code
-npm run lint
+10. **`package-lock.json`** (See `package.json` below, first). This is an automatically generated file based on the exact versions of your npm dependencies that were installed for your project. **(You won’t change this file directly).**
 
-# Generate generate post preview images (npm run dev need to run before)
-npm run generatePostPreviewImages
-```
+11. **`package.json`**: A manifest file for Node.js projects, which includes things like metadata (the project’s name, author, etc). This manifest is how npm knows which packages to install for your project.
 
-**:warning: Add `--prefix-paths` if you are using path prefix!**
+12. **`README.md`**: A text file containing useful reference information about your project.
 
-## Configure
+## 🎓 Learning Gatsby
 
-```js
-module.exports = {
-  siteTitle: 'gatsby-starter-morning-dew',
-  siteDescription: 'A Gatsby theme/starter to build lightning-fast websites',
-  authorName: 'Maxence Poutord',
-  twitterUsername: '_maxpou',
-  authorAvatar: 'avatar.jpeg', // file in content/images
-  defaultLang: 'en', // show flag if lang is not default. Leave empty to enable flags in post lists
-  authorDescription: `
-  呵呵o(*￣︶￣*)o 😎 <br>
-  Do you want to know more? <a href="https://blog.ii6g.com/about" target="_blank">Visit my website!</a>
-  `,
-  siteUrl: 'https://blog.ii6g.com/',
-  disqusSiteUrl: 'https://blog.ii6g.com/',
-  // Prefixes all links. For cases when deployed to maxpou.fr/gatsby-starter-morning-dew/
-  pathPrefix: '/gatsby-starter-morning-dew', // Note: it must *not* have a trailing slash.
-  siteCover: 'cover-baymax.jpeg', // file in content/images
-  googleAnalyticsId: 'UA-67868977-1',
-  background_color: '#ffffff',
-  theme_color: '#222222',
-  display: 'standalone',
-  icon: 'content/images/baymax.png',
-  postsPerPage: 6,
-  disqusShortname: 'maxpou',
-  headerTitle: 'gatsby-starter-morning-dew',
-  headerLinksIcon: 'baymax.png', // file in content/images (leave empty to disable: '')
-  headerLinks: [
-    {
-      label: 'Blog',
-      url: '/',
-    },
-    {
-      label: 'About',
-      url: '/about-gatsby-starter-morning-dew',
-    },
-    {
-      label: 'Installation',
-      url: '/how-to-install',
-    },
-  ],
-  // Footer information (ex: Github, Netlify...)
-  websiteHost: {
-    name: 'GitHub',
-    url: 'https://github.com',
-  },
-  footerLinks: [
-    {
-      sectionName: 'Explore',
-      links: [
-        {
-          label: 'Blog',
-          url: '/',
-        },
-        {
-          label: 'About',
-          url: '/about-gatsby-starter-morning-dew',
-        },
-        {
-          label: 'Installation',
-          url: '/how-to-install',
-        },
-      ],
-    },
-    {
-      sectionName: 'Follow the author',
-      links: [
-        {
-          label: 'Github',
-          url: 'https://github.com/maxpou/gatsby-starter-morning-dew',
-        },
-        {
-          label: 'Website',
-          url: 'https://blog.ii6g.com',
-        },
-        {
-          label: 'Twitter',
-          url: 'https://twitter.com/_maxpou',
-        },
-      ],
-    },
-  ],
-}
-```
+Looking for more guidance? Full documentation for Gatsby lives [on the website](https://www.gatsbyjs.org/). Here are some places to start:
 
-## Deploy
+- **For most developers, we recommend starting with our [in-depth tutorial for creating a site with Gatsby](https://www.gatsbyjs.org/tutorial/).** It starts with zero assumptions about your level of ability and walks through every step of the process.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/maxpou/gatsby-starter-morning-dew)
+- **To dive straight into code samples, head [to our documentation](https://www.gatsbyjs.org/docs/).** In particular, check out the _Guides_, _API Reference_, and _Advanced Tutorials_ sections in the sidebar.
+
+## 💫 Deploy
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/gatsbyjs/gatsby-starter-blog)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/import/project?template=https://github.com/gatsbyjs/gatsby-starter-blog)
+
+<!-- AUTO-GENERATED-CONTENT:END -->

@@ -1,80 +1,69 @@
-import React from 'react'
-import styled from 'styled-components'
-import { Text } from './Commons'
-import useSiteMetadata from '../hooks/use-site-config'
-import useSiteImages from '../hooks/use-site-images'
-import { colors } from '../tokens'
+/**
+ * Bio component that queries for data
+ * with Gatsby's useStaticQuery component
+ *
+ * See: https://www.gatsbyjs.org/docs/use-static-query/
+ */
 
-const BioWrapper = styled.div`
-  & .author-image {
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    display: block;
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    margin-left: -40px;
-    width: 80px;
-    height: 80px;
-    border-radius: 100%;
-    overflow: hidden;
-    padding: 6px;
-    z-index: 2;
-    box-shadow: #ececec 0 0 0 1px;
-    background-color: ${colors.backgroundArticle};
-  }
+import React from "react"
+import { useStaticQuery, graphql } from "gatsby"
+import Image from "gatsby-image"
 
-  & .author-image .img {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center center;
-    border-radius: 100%;
-  }
-
-  & .author-profile .author-image {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: 120px;
-    height: 120px;
-    padding: 3px;
-    margin: -100px auto 0 auto;
-    box-shadow: none;
-  }
-`
-
-const BioText = styled(Text)`
-  & a {
-    box-shadow: 0 2px 0 0 ${colors.links};
-  }
-  & a:hover {
-    filter: brightness(150%);
-    box-shadow: none;
-  }
-`
+import { rhythm } from "../utils/typography"
 
 const Bio = () => {
-  const { authorAvatar, authorName, authorDescription } = useSiteMetadata()
-  const { fixed } = useSiteImages(authorAvatar)
+  const data = useStaticQuery(graphql`
+    query BioQuery {
+      avatar: file(absolutePath: { regex: "/profile-pic.jpg/" }) {
+        childImageSharp {
+          fixed(width: 50, height: 50) {
+            ...GatsbyImageSharpFixed
+          }
+        }
+      }
+      site {
+        siteMetadata {
+          author {
+            name
+            summary
+          }
+          social {
+            twitter
+          }
+        }
+      }
+    }
+  `)
 
+  const { author, social } = data.site.siteMetadata
   return (
-    <BioWrapper>
-      <figure className="author-image">
-        <div
-          alt={authorName}
-          style={{ backgroundImage: `url("${fixed.src}")` }}
-          className="img"
-        />
-      </figure>
-      <section>
-        <h4>About the author</h4>
-        <BioText dangerouslySetInnerHTML={{ __html: authorDescription }} />
-      </section>
-    </BioWrapper>
+    <div
+      style={{
+        display: `flex`,
+        marginBottom: rhythm(2.5),
+      }}
+    >
+      <Image
+        fixed={data.avatar.childImageSharp.fixed}
+        alt={author.name}
+        style={{
+          marginRight: rhythm(1 / 2),
+          marginBottom: 0,
+          minWidth: 50,
+          borderRadius: `100%`,
+        }}
+        imgStyle={{
+          borderRadius: `50%`,
+        }}
+      />
+      <p>
+        Written by <strong>{author.name}</strong> {author.summary}
+        {` `}
+        <a href={`https://twitter.com/${social.twitter}`}>
+          You should follow him on Twitter
+        </a>
+      </p>
+    </div>
   )
 }
 

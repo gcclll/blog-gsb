@@ -1,39 +1,70 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import styled from 'styled-components'
-import Header from './Header'
-import Footer from './Footer'
-import 'prismjs/themes/prism-tomorrow.css'
-import { GlobalStyle } from './Commons'
-import { media } from '../tokens'
+import React from "react"
+import { Link } from "gatsby"
 
-const SiteContent = styled.div`
-  margin: 0 0;
+import { rhythm, scale } from "../utils/typography"
 
-  @media ${media.medium} {
-    margin: 60px 0;
-  }
-`
+const Layout = ({ location, title, children }) => {
+  const rootPath = `${__PATH_PREFIX__}/`
+  let header
 
-class Template extends React.Component {
-  render() {
-    const { children } = this.props
-
-    return (
-      <>
-        <Helmet>
-          <link
-            href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap"
-            rel="stylesheet"
-          />
-        </Helmet>
-        <GlobalStyle />
-        <Header />
-        <SiteContent>{children}</SiteContent>
-        <Footer />
-      </>
+  if (location.pathname === rootPath) {
+    header = (
+      <h1
+        style={{
+          ...scale(1.5),
+          marginBottom: rhythm(1.5),
+          marginTop: 0,
+        }}
+      >
+        <Link
+          style={{
+            boxShadow: `none`,
+            color: `inherit`,
+          }}
+          to={`/`}
+        >
+          {title}
+        </Link>
+      </h1>
+    )
+  } else {
+    header = (
+      <h3
+        style={{
+          fontFamily: `Montserrat, sans-serif`,
+          marginTop: 0,
+        }}
+      >
+        <Link
+          style={{
+            boxShadow: `none`,
+            color: `inherit`,
+          }}
+          to={`/`}
+        >
+          {title}
+        </Link>
+      </h3>
     )
   }
+  return (
+    <div
+      style={{
+        marginLeft: `auto`,
+        marginRight: `auto`,
+        maxWidth: rhythm(24),
+        padding: `${rhythm(1.5)} ${rhythm(3 / 4)}`,
+      }}
+    >
+      <header>{header}</header>
+      <main>{children}</main>
+      <footer>
+        © {new Date().getFullYear()}, Built with
+        {` `}
+        <a href="https://www.gatsbyjs.org">Gatsby</a>
+      </footer>
+    </div>
+  )
 }
 
-export default Template
+export default Layout

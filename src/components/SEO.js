@@ -1,61 +1,90 @@
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { withPrefix } from 'gatsby'
-import useSiteMetadata from '../hooks/use-site-config'
+/**
+ * SEO component that queries for data with
+ *  Gatsby's useStaticQuery React hook
+ *
+ * See: https://www.gatsbyjs.org/docs/use-static-query/
+ */
 
-const SEO = props => {
-  const { isBlogPost, path = '', lang = 'en' } = props
-  const {
-    siteTitle,
-    siteUrl,
-    siteCover,
-    siteDescription,
-    twitterUsername,
-  } = useSiteMetadata()
+import React from "react"
+import PropTypes from "prop-types"
+import { Helmet } from "react-helmet"
+import { useStaticQuery, graphql } from "gatsby"
 
-  const title = props.title
-    ? `${props.title} | ${siteTitle}`
-    : `${siteTitle} - ${siteDescription}`
-  const formatedSiteUrl = siteUrl.endsWith('/')
-    ? siteUrl.substring(0, siteUrl.length - 1)
-    : siteUrl
-  const imagePath = props.imageShare || props.cover || withPrefix(siteCover)
-  const image = `${formatedSiteUrl}${imagePath}`
-  const description = props.description || siteDescription
-  const internalTranslations = (props.translations || []).filter(
-    t => !t.link.startsWith('http')
+const SEO = ({ description, lang, meta, title }) => {
+  const { site } = useStaticQuery(
+    graphql`
+      query {
+        site {
+          siteMetadata {
+            title
+            description
+            social {
+              twitter
+            }
+          }
+        }
+      }
+    `
   )
+
+  const metaDescription = description || site.siteMetadata.description
 
   return (
-    <Helmet title={title}>
-      {/* General tags */}
-      <html lang={lang} />
-      <meta name="description" content={description} />
-      <link rel="canonical" href={formatedSiteUrl + withPrefix(path)} />
-
-      {internalTranslations.map(translation => (
-        <link
-          rel="alternate"
-          hreflang={translation.hreflang}
-          href={formatedSiteUrl + withPrefix(translation.link)}
-        />
-      ))}
-
-      {/* OpenGraph tags */}
-      <meta property="og:url" content={formatedSiteUrl + withPrefix(path)} />
-      <meta property="og:type" content={isBlogPost ? 'article' : 'website'} />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-
-      {/* Twitter Card tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:creator" content={twitterUsername} />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-    </Helmet>
+    <Helmet
+      htmlAttributes={{
+        lang,
+      }}
+      title={title}
+      titleTemplate={`%s | ${site.siteMetadata.title}`}
+      meta={[
+        {
+          name: `description`,
+          content: metaDescription,
+        },
+        {
+          property: `og:title`,
+          content: title,
+        },
+        {
+          property: `og:description`,
+          content: metaDescription,
+        },
+        {
+          property: `og:type`,
+          content: `website`,
+        },
+        {
+          name: `twitter:card`,
+          content: `summary`,
+        },
+        {
+          name: `twitter:creator`,
+          content: site.siteMetadata.social.twitter,
+        },
+        {
+          name: `twitter:title`,
+          content: title,
+        },
+        {
+          name: `twitter:description`,
+          content: metaDescription,
+        },
+      ].concat(meta)}
+    />
   )
+}
+
+SEO.defaultProps = {
+  lang: `en`,
+  meta: [],
+  description: ``,
+}
+
+SEO.propTypes = {
+  description: PropTypes.string,
+  lang: PropTypes.string,
+  meta: PropTypes.arrayOf(PropTypes.object),
+  title: PropTypes.string.isRequired,
 }
 
 export default SEO
