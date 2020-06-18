@@ -5,7 +5,7 @@ date: 2020-06-18
 cover: ./cover.jpg
 generate-card: true
 language: en
-tags:
+tags: 
     - programming
     - javascript
     - vue3.0
