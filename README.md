@@ -1,12 +1,23 @@
-<!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
 <p align="center">
-  <a href="https://www.gatsbyjs.org">
-    <img alt="Gatsby" src="https://www.gatsbyjs.org/monogram.svg" width="60" />
+  <a href="https://blog.ii6g.com">
+    <img alt="gccll" src="http://qiniu.ii6g.com/cheng.png?imageMogr2/thumbnail/!100p" width="60" />
   </a>
 </p>
 <h1 align="center">
-  Gatsby's blog starter
+  若叶知秋
 </h1>
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/121c35ee-8c99-463a-8641-8151e491c1df/deploy-status)](https://app.netlify.com/sites/gcl-blog/deploys)
+
+## ⚒ Configuration
+
+## 👍 Plugins
+
+
+
+
+
+<!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
 
 Kick off your project with this blog boilerplate. This starter ships with the main Gatsby configuration files you might need to get up and running blazing fast with the blazing fast app generator for React.
 
