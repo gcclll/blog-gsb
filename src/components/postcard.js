@@ -1,6 +1,5 @@
 import React from "react"
 import { Link } from "gatsby"
-import "../styles/bulma.scss"
 
 const PostCard = prop => {
   // (title, date, desc, tags)
@@ -24,7 +23,7 @@ const PostCard = prop => {
         </section>
       </article>
       <div className="tags">
-        {prop.tags?.map((tag, i) => (
+        {prop.tags.map((tag, i) => (
           <Link key={i} to={"tag/" + tag} className="tag">
             {tag}
           </Link>

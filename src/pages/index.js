@@ -6,7 +6,6 @@ import Layout from "../components/layout"
 import SEO from "../components/seo"
 import PostCard from "../components/postcard"
 import { rhythm } from "../utils/typography"
-import "../styles/bulma.scss"
 
 const PageIndex = ({ data, location }) => {
   const siteTitle = data.site.siteMetadata.title
@@ -80,7 +79,7 @@ const BlogIndex = ({ data, location }) => {
   )
 }
 
-export default PageIndex
+export default BlogIndex
 
 export const pageQuery = graphql`
   query {
