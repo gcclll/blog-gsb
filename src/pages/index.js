@@ -72,6 +72,13 @@ const BlogIndex = ({ data, location }) => {
                 }}
               />
             </section>
+            <div className="tags">
+              {node.frontmatter.tags.map((tag, i) => (
+                <Link key={i} to={"tag/" + tag} className="tag">
+                  {tag}
+                </Link>
+              ))}
+            </div>
           </article>
         )
       })}

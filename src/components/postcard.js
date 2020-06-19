@@ -29,6 +29,7 @@ const PostCard = prop => {
           </Link>
         ))}
       </div>
+      {/* <Link className="hidelink" to={prop.slug}></Link> */}
     </div>
   )
 }
