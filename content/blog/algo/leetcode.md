@@ -1,5 +1,5 @@
 ---
-title: Algorithm on leetcode 1(算法学习 leetcode)
+title: Algorithm on leetcode 1
 slug: algo-leetcode
 date: 2020-06-16
 cover: ./cover.jpg

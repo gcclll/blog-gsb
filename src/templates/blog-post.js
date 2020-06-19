@@ -24,6 +24,7 @@ const BlogPostTemplate = ({ data, pageContext, location }) => {
               marginTop: rhythm(1),
               marginBottom: 0,
             }}
+            className="title is-1"
           >
             {post.frontmatter.title}
           </h1>
