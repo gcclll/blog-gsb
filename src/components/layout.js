@@ -1,5 +1,6 @@
 import React from "react"
 import { Link } from "gatsby"
+import icon from "../../content/assets/github.svg"
 
 import { rhythm, scale } from "../utils/typography"
 
@@ -61,7 +62,14 @@ const Layout = ({ location, title, children }) => {
       <footer>
         © {new Date().getFullYear()}, Built with
         {` `}
-        <a href="https://www.gatsbyjs.org">Gatsby</a>
+        <a href="https://www.gatsbyjs.org">Gatsby</a>&nbsp;
+        <a
+          className="github"
+          href="https://www.github.com/gcclll"
+          target="_blank"
+        >
+          <img src={icon} />
+        </a>
       </footer>
     </div>
   )
