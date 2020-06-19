@@ -4,7 +4,7 @@ slug: es6-plus-plus
 date: 2020-06-16
 cover: ./cover.jpg
 generate-card: false
-description: ES6
+description: ES6+ new syntax notes. 
 language: en
 tags:
     - programming

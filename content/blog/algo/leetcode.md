@@ -4,7 +4,7 @@ slug: algo-leetcode
 date: 2020-06-16
 cover: ./cover.jpg
 generate-card: false
-description: leetcode
+description: leetcode practices logs. 
 language: en
 tags:
     - programming
