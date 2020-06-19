@@ -7,7 +7,7 @@ import SEO from "../components/seo"
 import PostCard from "../components/postcard"
 import { rhythm } from "../utils/typography"
 
-const PageIndex = ({ data, location }) => {
+const BlogIndex = ({ data, location }) => {
   const siteTitle = data.site.siteMetadata.title
   const posts = data.allMarkdownRemark.edges
   const count = posts.length
@@ -37,51 +37,6 @@ const PageIndex = ({ data, location }) => {
       ) : (
         <div></div>
       )}
-    </Layout>
-  )
-}
-
-const BlogIndex = ({ data, location }) => {
-  const siteTitle = data.site.siteMetadata.title
-  const posts = data.allMarkdownRemark.edges
-
-  return (
-    <Layout location={location} title={siteTitle}>
-      <SEO title="Home" />
-      <Bio />
-      {posts.map(({ node }) => {
-        const title = node.frontmatter.title || node.fields.slug
-        return (
-          <article key={node.fields.slug}>
-            <header>
-              <h3
-                style={{
-                  marginBottom: rhythm(1 / 4),
-                }}
-              >
-                <Link style={{ boxShadow: `none` }} to={node.fields.slug}>
-                  {title}
-                </Link>
-              </h3>
-              <small>{node.frontmatter.date}</small>
-            </header>
-            <section>
-              <p
-                dangerouslySetInnerHTML={{
-                  __html: node.frontmatter.description || node.excerpt,
-                }}
-              />
-            </section>
-            <div className="tags">
-              {node.frontmatter.tags.map((tag, i) => (
-                <Link key={i} to={"tag/" + tag} className="tag">
-                  {tag}
-                </Link>
-              ))}
-            </div>
-          </article>
-        )
-      })}
     </Layout>
   )
 }
