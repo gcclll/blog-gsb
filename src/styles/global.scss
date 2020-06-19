@@ -6,7 +6,9 @@ $body-family: sans-serif, Futura, Didact Gothic, Century Gothic, Helvetica Nenu,
 
 /* @import "~bulma/bulma.sass"; */
 
-main .box:hover {
-  transition: all 100ms cubic-bezier(0.4, 0, 0.2, 1) 0s;
-  cursor: pointer;
+html {
+  background-color: peachpuff;
+}
+a {
+  color: rebeccapurple;
 }
