@@ -1,9 +1,10 @@
 ---
 title: Vue3.0 源码之 Reactivity
-slug: vue-reactivity
+slug: reactivity
 date: 2020-06-16
 cover: ./cover.jpg
 generate-card: false
+description: vue3.0 source code of reactivity
 language: en
 tags:
     - programming

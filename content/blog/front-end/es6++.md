@@ -4,6 +4,7 @@ slug: es6-plus-plus
 date: 2020-06-16
 cover: ./cover.jpg
 generate-card: false
+description: ES6
 language: en
 tags:
     - programming

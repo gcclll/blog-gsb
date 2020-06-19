@@ -9,7 +9,7 @@ const PostCard = prop => {
       <article key={prop.title} className="content">
         <header>
           <h2 className="title">
-            <Link style={{ boxShadow: `none` }} to={"blog/" + prop.slug}>
+            <Link style={{ boxShadow: `none` }} to={prop.slug}>
               {prop.title}
             </Link>
           </h2>
