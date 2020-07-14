@@ -1,5 +1,5 @@
 ---
-title: Algorithm on leetcode 1
+title: Algorithm on leetcode easy level
 slug: algo-leetcode
 date: 2020-06-16
 cover: ./cover.jpg
@@ -14,7 +14,53 @@ tags:
 
 > 基于leetcode的算法学习记录文章，使用语言主要是 JavaScript，可能会有少于C/Python实现。
 
-# 字符串操作
+# 数组分类
+
+## [01. 数组中重复的数字](https://leetcode-cn.com/problems/shu-zu-zhong-zhong-fu-de-shu-zi-lcof/)
+
+### 方案一[JavaScript]： reduce + Object.keys + map + filter
+
+```js
+/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+var findRepeatNumber = function (nums) {
+  if (!Array.isArray(nums)) return []
+
+  let res = nums.reduce((acc, num) => {
+    const k = num + ""
+    let v = acc[num + ""] || 0
+    if (acc.hasOwnProperty(k)) {
+      acc[k] = ++v
+    } else {
+      acc[k] = 0
+    }
+    return acc
+  }, {})
+
+  const found = +Object.keys(res)
+    .map(k => (res[k] ? k : 0))
+    .filter(Boolean)[0]
+
+  return found !== found ? -1 : found
+}
+
+//console.log(findRepeatNumber([2, 3, 1, 0, 2, 5, 3]))
+
+```
+
+**执行结果：**
+
+<font color="red">执行用时：152 ms, 在所有 JavaScript 提交中击败了24.41%的用户</font>
+
+内存消耗：51.9 MB, 在所有 JavaScript 提交中击败了100.00%的用户
+
+| 提交时间 | 提交结果 | 运行时间 | 内存消耗 | 语言       |
+| :------- | :------- | :------- | :------- | :--------- |
+| 几秒前   | 通过     | 152 ms   | 51.9 MB  | Javascript |
+
+# 字符串分类
 
 ## 删除字符串中重复的字符
 
