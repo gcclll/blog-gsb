@@ -1,5 +1,5 @@
 ---
-title: Algorithm on leetcode easy level
+title: Algorithm on leetcode easy level【DOING】
 slug: algo-leetcode
 date: 2020-06-16
 cover: ./cover.jpg
