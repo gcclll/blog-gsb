@@ -15,9 +15,12 @@ tags:
 # 阶段代码记录
 
 1. <span id="link-01"></span>[test01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-01-some-text)
+
 2. <span id="link-02"></span>[test02: some text <div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-01)
 
+3. <span id="link-03"></span>[test02: some text <div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-02)
 
+   
 
 # 测试用例分析
 
@@ -55,7 +58,54 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 
 ### Text 文本解析
 
+#### <span id="test-text-03"></span>03-text with interpolation
+
+该用例检验的差值的处理。
+
+```ts
+
+test('text with interpolation', () => {
+  const ast = baseParse('some {{ foo + bar }} text')
+  const text1 = ast.children[0] as TextNode
+  const text2 = ast.children[2] as TextNode
+
+  expect(text1).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: 'some ',
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 5, line: 1, column: 6 },
+      source: 'some '
+    }
+  })
+  expect(text2).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: ' text',
+    loc: {
+      start: { offset: 20, line: 1, column: 21 },
+      end: { offset: 25, line: 1, column: 26 },
+      source: ' text'
+    }
+  })
+}
+```
+
+差值的处理分支在 parseChildren 的 
+
+```ts
+if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
+  // '{{'
+  node = parseInterpolation(context, mode)
+}
+```
+
+完成，因为需要 [parseInterpolation()](#parse-parseInterpolation) 的支持。
+
+
+
 #### <span id="test-text-02"></span>02-simple text\<div>
+
+[该用例代码链接->](#link-03)
 
 在跑这个用例的时候出现内存溢出了，查了下原因是因为只是[增加了 while 里面的各种 if 分支](#link-02)，但是实际并没有实现，这个用例会走到 
 
@@ -76,6 +126,8 @@ else if (mode === TextModes.DATA && s[0] === "<") {
       // 会走到这个分支里面，但是由于下面的 parseTag 未实现，因此一直在这个分支里面循环
       // 加上用例里面重写了 onError 不会 throw err 终止，因此会出现死循环
       emitError(context, ErrorCodes.X_INVALID_END_TAG);
+      // 但是上面都报错了，为什么这里还要加个 parseTag??? 正常理解应该是走不到这里啊
+      // 除非有重写 onError 报错机制???
       // parseTag(context, TagType.End, parent);
       continue;
     } else {
@@ -83,7 +135,7 @@ else if (mode === TextModes.DATA && s[0] === "<") {
     }
 ```
 
-因此要通过这个用例，就必须得实现 parseTag(context, TagType.End, parent) 函数解析标签。
+因此要通过这个用例，就必须得实现 `parseTag(context, TagType.End, parent)` 函数解析标签。
 
 ```js
 
@@ -107,7 +159,32 @@ test("simple text with invalid end tag", () => {
 }
 ```
 
+因为 baseparse 调用的时候有传递 onError 覆盖报错代码，会进入到 parseTag 进行解析标签，如果不实现会导致死循环。因此这里要通过这个用例就必须实现 [parseTag()](#parse-parsetag):
 
+```js
+
+function parseTag(context, type, parent) {
+  // 获取当前解析的起始位置，此时值应该是 some text 的长度
+  const start = getCursor(context);
+  // 匹配 </div 过滤掉空格字符，但是为什么要把 > 给忽略掉???
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source);
+  const tag = match[1];
+  const ns = context.options.getNamespace(tag, parent);
+  // log1: 改变位移，将 offset 定位到 </div> 的最有一个 > 上
+  // 在这里 context.offset = 10, context.line = 1
+  advanceBy(context, match[0].length);
+  // 过滤掉空格
+  advanceSpaces(context);
+	// log2: 经过 advance之后 context.offset = 15, context.line = 1
+  // 正好过滤 </div 5个字符
+  const cursor = getCursor(context);
+  const currSource = context.source;
+}
+```
+
+parseTag 实现到这里就可以满足通过测试用例的条件了，这里面会去匹配 `</div` 然后将其过滤掉(通过advanceBy和 advanceSpaces 来改变 context 里面的 offset 和 line 值)，输出结果(log1 和 log2 位置 context 的输出)：
+
+![](http://qiniu.ii6g.com/1595444610.png?imageMogr2/thumbnail/!100p)
 
 #### <span id="test-text-01">01-simple text
 
@@ -511,7 +588,177 @@ baseParse 之后的 ast 结构：
 
 阶段代码：[test-01-some-text 测试用例通过](#link-01)
 
+## <span id="parse-parseInterpolation"></span>parseInterpolation(context, mode)
+
+函数声明：
+
+```ts
+function parseInterpolation(
+  context: ParserContext,
+  mode: TextModes
+): InterpolationNode | undefined {}
+```
+
+**context**: 将被解析的上下文，此时这里的 source 应该是以差值 (`{{`)开始的字符串。
+
+**mode**: 文本模式。
+
+```js
+
+function parseInterpolation(context, mode) {
+  // 找出插值模板的开始和结束符号，默认是 {{ 和 }}
+  const [open, close] = context.options.delimiters;
+  const closeIndex = context.source.indexOf(close, open.length);
+  if (closeIndex === -1) {
+    emitError(context, ErrorCodes.X_MISSING_INTERPOLATION_END);
+    return undefined;
+  }
+
+  const innerStart = getCursor(context),
+    innerEnd = getCursor(context),
+    // 插值里面的字符串长度
+    rawContentLength = closeIndex - open.length,
+    // 插值里面的字符串内容
+    rawContent = context.source.slice(0, rawContentLength),
+    preTrimContent = parseTextData(context, rawContentLength, mode),
+    content = preTrimContent.trim(),
+    startOffset = preTrimContent.indexOf(content);
+  if (startOffset > 0) {
+    // 说明插值内有空格，所有 startOffset 才会大于 0
+    // 这个时候需要更新 innerStart 的 offset-line-column 定位到第一个 {{ 
+    // 的开头即 { 位置上
+    advancePositionWithMutation(innerStart, rawContent, startOffset);
+  }
+
+  // {{ foo + bar }} ->
+  // res = (' foo + bar '.length - 'foo + bar'.length - ' '.length)
+  // 插值里面字符串的长度 - 去掉空格后的长度 - 起始空格的长度，得到的
+  // 就是结束位置的 offset
+  const endOffset =
+    rawContentLength - (preTrimContent.length - content.length - startOffset);
+  advancePositionWithMutation(innerEnd, rawContent, endOffset);
+  // 定位到 }} 位置
+  advanceBy(context, close.length);
+
+  // 输出如下图 ->>>>
+  console.log(innerEnd, innerStart, "1");
+  
+  // 构造节点类型结构，因为是插值，表达式结构，所以类型需要声明
+  // 另外 isStatic 表示是否为静态数据，不需要计算的类型
+  // isConstant 表示是否为常量类型，结果不会发生改变的
+  return {
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      isStatic: false,
+      isConstant: false,
+      content,
+      loc: getSelection(context, innerStart, innerEnd),
+    },
+    loc: getSelection(context, innerStart),
+  };
+}
+```
+
+![](http://qiniu.ii6g.com/1595559520.png?imageMogr2/thumbnail/!100p)
+
+图中我们看到在经过解析之后 innerStart 和 innerEnd 都数据都正确定位到了相应位置，innerStart 是解析后插值字符串的开始位置(第一个 `{`)，innerEnd是解析后插值字符串的结束位置(最后一个 `}`)。
+
+解析之后得到的 `ast.children` 将会有三个节点：
+
+```json
+(3) [{…}, {…}, {…}]
+0: {type: 2, content: "some ", loc: {…}} // 第一个文本节点
+1: {type: 5, content: {…}, loc: {…}}  // 这里是插值节点
+2: {type: 2, content: "}} text", loc: {…}} // 最后文本节点，为啥包含 }} ???
+length: 3
+__proto__: Array(0)
+```
+
+解析回顾(分别解析出了三个节点对象)：
+
+1. `0: {type: 2, content: "some ", loc: {…}}`
+   详细结构<span id="x-1"></span>：
+
+   ```json
+   0:
+     content: "some " // 解析出的文本内容
+     loc: // 位置信息
+     	end: {column: 6, line: 1, offset: 5} // 该节点在模板中的位置信息
+     	source: "some " // 文本源内容
+     	start: {column: 1, line: 1, offset: 0} // 该节点在模板中的结束信息
+     __proto__: Object
+   	type: 2 // 节点类型
+   	__proto__: Object
+   ```
+
+   那么是如何得到上面的结果的呢？？？那得从 [parseChildren](#parse-parsechildren) 说起了，模板：
+
+   --->> "some {{ foo + bar }} text"
+
+   `(!context.inVPre && s.startsWith(context.options.delimiters[0]))` <font color="red">检测失败</font>
+
+   `mode === TextModes.DATA && s[0] === "<"` <font color="red">检测失败</font>
+
+   即一开始并不会进入插值和标签解析代码，而是直接进入 [parseText(context, mode)](#parse-parsetext) 中解析文本，解析时候直到遇到 `{{` 之前都一直会当做文本解析，而之前的文本中又不包含 `decodeMap` 中的字符，因此知道遇到 `{` 之前会一直执行 while 里面的：
+
+   ```js
+   if (!node) {
+     node = parseText(context, mode);
+   }
+   
+   if (Array.isArray(node)) {
+     for (let i = 0; i < node.length; i++) {
+       pushNode(nodes, node[i]);
+     }
+   } else {
+     pushNode(nodes, node);
+   }
+   ```
+
+   这段代码，而由于 "some " 都是普通字符，每个字符串会对应一个 node ，然后又都是普通文本节点，会经过 [pushNode(nodes, node[i])](#parse-pushnode) 处理掉，进行合并最后成为上面的一个完整的 "some " 对应[文本节点结构](#x-1)。
+
+2. `1: {type: 5, content: {…}, loc: {…}}`
+
+   节点结构<span id="x-2"></span>：
+
+   ```json
+   1:
+     content: // 这里的数据是经过插值解析之后的模板对象
+       content: "{{ foo + ba" // trim 之后的插值字符串，没有 }} ???
+       isConstant: false // 非常量类型
+       isStatic: false // 非静态节点
+       loc:  // 解析之后的该节点在整个模板中的位置信息
+   			// 这里是不是漏了一个 bar 后面的 `r` ???
+         end: {column: 17, line: 1, offset: 16}
+         source: "{{ foo + ba"
+   			// 这里 start 继承了上一级的 loc.start 起始位置
+         start: {column: 6, line: 1, offset: 5}
+       __proto__: Object
+       type: 4 // 插值节点
+       __proto__: Object
+   	loc: // 这里是没经过去尾部空格的位置信息
+   		// 18 -> 'some {{ foo + bar ' 最后一个空格位置
+       end: {column: 19, line: 1, offset: 18} 
+       source: "{{ foo + bar "
+   		// 5 -> 'some ' 第一个 { 位置
+       start: {column: 6, line: 1, offset: 5} 
+       __proto__: Object
+     type: 5
+     __proto__: Object
+   ```
+
+   
+
+3. `{type: 2, content: "}} text", loc: {…}}`
+
+<font color="blue">PS: 对于 foo 和 bar 变量数据解析执行结果这块暂时不讨论，也不知道如何做到的，现阶段只关心模板的解析。</font>
+
 ## <span id="parse-parsetag"></span>parseTag(context, type, parent)
+
+### 问题
+
+1. 为什么只匹配 `</div` 而忽略掉最后一个 `>`???
 
 参数: 
 
@@ -521,6 +768,27 @@ function parseTag(
   type: TagType, // Start(<div>), End(</div>)开始结束标签
   parent: ElementNode | undefined // 该标签的父级
 ): ElementNode
+```
+
+具体实现：
+
+```js
+
+function parseTag(context, type, parent) {
+  // 获取当前解析的起始位置，此时值应该是 simple text 的长度
+  const start = getCursor(context);
+  // 匹配 </div 过滤掉空格字符，但是为什么要把 > 给忽略掉???
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source);
+  const tag = match[1];
+  const ns = context.options.getNamespace(tag, parent);
+  // 改变位移，将 offset 定位到 </div> 的最有一个 > 上
+  advanceBy(context, match[0].length);
+  // 过滤掉空格
+  advanceSpaces(context);
+
+  const cursor = getCursor(context);
+  const currSource = context.source;
+}
 ```
 
 
@@ -616,7 +884,7 @@ function parseTextData(
 
 
 
-## pushNode(nodes, node)
+## <span id="parse-pushnode"></span>pushNode(nodes, node)
 
 1. 注释节点不处理
 2. 合并文本节点(前提是prev, node 两个节点是紧挨着的，由 loc.end.offset 和 loc.start.offset判断)

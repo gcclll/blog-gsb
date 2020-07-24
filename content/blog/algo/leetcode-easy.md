@@ -13,6 +13,11 @@ tags:
 ---
 
 > 基于leetcode的算法学习记录文章，使用语言主要是 JavaScript，可能会有少于C/Python实现，在没标明的情况下默认都是 JavaScript 实现。
+>
+> 约定：
+>
+> 1. 有<sup><font color="red" size="2">每日</font></sup> 角标的标识是每日一题的题目
+> 2. 有<sup><font color="red" size="2">官方</font></sup>角标的标识是该方案是官方题解
 
 # 数组分类
 
@@ -220,7 +225,7 @@ findRepeatNumber = function _(nums) {
    }
    ```
 
-## 02. [两数之和 II - 输入有序数组](https://leetcode-cn.com/problems/two-sum-ii-input-array-is-sorted/)
+## <span id="array-02"></span>02. [两数之和 II - 输入有序数组](https://leetcode-cn.com/problems/two-sum-ii-input-array-is-sorted/)
 
 ### <span id="array-02-plan-1"></span>方案一：两个for，O(n<sup>2</sup>)
 
@@ -298,7 +303,7 @@ var twoSum = function(numbers, target) {
 | :------- | :------- | :------- | :------- | :--------- |
 | 几秒前   | 通过     | 200 ms   | 37.9 MB  | Javascript |
 
-### 方案二: 排除 + 二分(*O(n<sup>2</sup>), O(1)*)
+### <span id="array-02-plan-2"></span>方案二: 排除 + 二分(*O(n<sup>2</sup>), O(1)*)
 
 > 优化后的代码，依旧需要找出 midIdx，经过两次循环，时间复杂度为 O(n<sup>2</sup>)，过程中不需要开辟新的数组，完全是在索引上进行操作的，因此空间复杂度是 O(1)
 
@@ -502,7 +507,7 @@ node test.js
 
 PS：结果好像并没什么改善，使用双层循环始终不完美，能否只是用一个层循环就能解决问题呢？？？
 
-### 方案三：计算，存储差值方式(*O(n), O(n)*)
+### <span id="array-02-plan-3"></span>方案三：计算，存储差值方式(*O(n), O(n)*)
 
 差值计算原理
 
@@ -619,7 +624,7 @@ var twoSum = function (numbers, target) {
 
 ### 官方方案
 
-#### 二分查找(O(nlogn), O(1))
+#### <span id="array-02-plan-5"></span>二分查找(O(nlogn), O(1))
 
 先用第一层的 for 固定第一个数，然后在 for 里面使用 while 二分查找第二个数，第一个for 是 O(n) 第二个 while 是 logn 因此最后的时间复杂度是 (O(nlogn))。
 
@@ -664,9 +669,116 @@ var twoSum = function (numbers, target) {
 >
 >内存消耗：38 MB, 在所有 JavaScript 提交中击败了10.00%的用户
 
-#### [对撞双指针法](#array-02-plan-4)(O(n), O(1))
+#### <span id="array-02-plan-6"></span>[对撞双指针法](#array-02-plan-4)(O(n), O(1))
 
-如：[方案四](#array-02-plan-4)，采用两端指针分别右移和左移方式来定位唯一解，这种方案在位移过程中不会出现过滤掉唯一解的情况，因为头端右移的前提是 value < target，需要补值(就算尾端先达到条件，只要值小尾端就不会发生位移)，尾端左移前提是 value > target ，需要减值(就算头端先达到条件，只要值大于尾端就不会发生位移)，因此保证了左右两端任一一端先达到符合条件的值该值都不会被过滤掉，从而当两端值都满足条件的时候退出循环。
+如：[方案四](#array-02-plan-4)，采用两端指针分别右移和左移方式来定位唯一解，这种方案在位移过程中不会出现过滤掉唯一解的情况，因为头端右移的前提是 value < target，需要补值(就算尾端先达到条件，只要值小尾端就不会发生位移)，尾端左移前提是 value > target ，需要减值(就算头端先达到条件，只要值大尾端就不会发生位移)，因此保证了左右两端任一一端先达到符合条件的值该值都不会被过滤掉，从而当两端值都满足条件的时候退出循环。
+
+## 03<sup><font color="red" size="2">每日</font></sup>. [剑指 Offer 11. 旋转数组的最小数字](https://leetcode-cn.com/problems/xuan-zhuan-shu-zu-de-zui-xiao-shu-zi-lcof/)
+
+审题：
+
+把一个数组最开始的若干个元素搬到数组的末尾，我们称之为数组的旋转。输入一个递增排序的数组的一个旋转，输出旋转数组的最小元素。例如，数组 [3,4,5,1,2] 为 [1,2,3,4,5] 的一个旋转，该数组的最小值为1。  
+
+假设目标值为 target，那么在 target 之前的数组元素都是按照增序排列的，我们要找出的就是比这些数小的第一个数。
+
+### 方案一：for 循环直接遍历查找(O(n), O(1))
+
+明确问题含义之后，最简单的方法就是通过遍历找到比前面更小的数即可。
+
+问题?：<font color="red">既然 target 前面的数都是升序列表，说明我们只要比较目标值和数组第一个数就可以了，第一个数到目标值之间的数的比较其实都是多余的。</font>
+
+```js
+/**
+ * @param {number[]} numbers
+ * @return {number}
+ */
+var minArray = function(numbers) {
+    let min = numbers[0], len = numbers.length
+    if (len === 0) return -1
+    if (len < 2) return min
+  	
+
+    for (let i = 1; i < len; i++) {
+        let val = numbers[i]
+        if (val < min) {
+            return val
+        }
+    }
+    return min
+};
+```
+
+结果：
+
+> 执行用时：92 ms, 在所有 JavaScript 提交中击败了12.99%的用户
+>
+> 内存消耗：38 MB, 在所有 JavaScript 提交中击败了100.00%的用户
+
+| 提交时间 | 提交结果 | 运行时间 | 内存消耗 | 语言       |
+| :------- | :------- | :------- | :------- | :--------- |
+| 几秒前   | 通过     | 92 ms    | 38 MB    | Javascript |
+
+### 方案二<sup><font color="red" size="2">官方</font></sup>：二分法(O(logn))
+
+```js
+// 二分法
+var minArray = function (numbers) {
+    let len = numbers.length, i = 0, j = len - 1
+    if (len === 0) return -1
+    if (len === 1) return numbers[0]
+    if (numbers[0] > numbers[1]) return numbers[1]
+
+    while ( i < j) {
+        let lVal = numbers[i], rVal = numbers[j]
+        let mid = Math.floor((j - i) / 2) + i,
+        midVal = numbers[mid]
+        // 中间值比右边的值大，说明在旋转的数组范围内，左侧指针右移
+        if (midVal > rVal) { 
+            i = mid + 1
+        } else if (midVal < rVal) {
+          // 中间值比右边值小，说明在非旋转数组范围内，右侧指针左移
+          // 但是为了不过滤掉目标值，这里不能 mid - 1，因为我要找的值
+          // 肯定是在非旋转的数组范围内的
+            j = mid
+        } else {
+          // 这里指针一步一步左移，是为了应对相同值的情况，即 midVal === rVal 的时候
+          // 这里为何不需要考虑 i++ 的情况???
+          // ----> 因为low指针右移的前提是 midVal > rVal，即此时的 midVal 一定是在
+          // 旋转数组范围内，只要进行 mid + 1 将左侧的值全部过滤掉，就算有相同的值，那一定
+          // 都还是在旋转数组范围内，因此直接过滤即可。
+            j--
+        }
+        
+    }
+  	// 最后循环结束的时候，肯定就是最小值的位置
+    return numbers[i]
+   
+}
+```
+
+执行用时：112 ms, 在所有 JavaScript 提交中击败了6.90%的用户
+
+内存消耗：38.1 MB, 在所有 JavaScript 提交中击败了100.00%的用户
+
+| 提交时间 | 提交结果 | 运行时间 | 内存消耗 | 语言       |
+| :------- | :------- | :------- | :------- | :--------- |
+| 几秒前   | 通过     | 112 ms   | 38.1 MB  | Javascript |
+
+## 04. [两数之和](https://leetcode-cn.com/problems/two-sum/)
+
+给定一个整数数组 nums 和一个目标值 target，请你在该数组中找出和为目标值的那 两个 整数，并返回他们的数组下标。
+
+你可以假设每种输入只会对应一个答案。但是，数组中同一个元素不能使用两遍。
+
+这一题和 [02. 两数之和 II - 输入有序数组](#array-02) 解法相差不大，唯一不同的是02中是输入的有序数组，这里的数组顺序是未知的，可能有序可能乱序。
+
+因此解法上的差异从4个方案+两个官方方案来分析的话会有如下结果：
+
+1. [方案一](#array-02-plan-1) 两个 for 循环，不需要改动啥，暴力解法不在乎是否有序
+2. [方案二](#array-02-plan-2) 二分法，会根据有序数组进行排除，因此在这里不适用，但二分法依旧有用
+3. [方案三](#array-02-plan-3) 差值法，依旧适用，该方案不区分是否有序
+4. [方案四](#array-02-plan-4) 对撞法，依旧适用
+5. ... 官方方案二分查找采用了有序数组过滤类似方案二，对撞法就是方案三。
 
 # 字符串分类
 
