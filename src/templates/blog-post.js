@@ -11,8 +11,7 @@ const BlogPostTemplate = ({ data, pageContext, location, ...more }) => {
   const siteTitle = site.siteMetadata.title
   const { previous, next } = pageContext
 
-  const tocHtml = node?.edges.filter(it => it.node.id === post.id)[0]?.node
-    ?.tableOfContents
+  const tocHtml = post.tableOfContents
 
   return (
     <Layout location={location} title={siteTitle}>
@@ -99,25 +98,11 @@ export const pageQuery = graphql`
       id
       excerpt(pruneLength: 160)
       html
+      tableOfContents(absolute: false, maxDepth: 2)
       frontmatter {
         title
         date(formatString: "MMMM DD, YYYY")
         description
-      }
-    }
-    allMarkdownRemark {
-      edges {
-        node {
-          id
-          fields {
-            slug
-          }
-          excerpt(format: HTML)
-          tableOfContents(absolute: true, maxDepth: 2)
-          wordCount {
-            words
-          }
-        }
       }
     }
   }
