@@ -3,67 +3,72 @@ module.exports = {
     title: `若叶知秋`,
     author: {
       name: `ZhiCheng Lee(若叶知秋)`,
-      summary: `中国人。`,
+      summary: `中国人。`
     },
     description: `落叶相依浑似醉，潦倒何妨；悠悠岁月谁高歌，绝胜柳狂。`,
     siteUrl: `https://blog.ii6g.com`,
     social: {
-      twitter: `gccll_love`,
-    },
+      twitter: `gccll_love`
+    }
   },
   plugins: [
     `gatsby-plugin-sass`,
     {
-      resolve: "gatsby-plugin-mailchimp",
+      resolve: 'gatsby-plugin-mailchimp',
       options: {
         endpoint:
-          "https://ii6g.us10.list-manage.com/subscribe/post?u=b5ea336151ce3aa76e951cb09&amp;id=5d1d98cae3", // string; add your MC list endpoint here; see instructions below
-        timeout: 3500, // number; the amount of time, in milliseconds, that you want to allow mailchimp to respond to your request before timing out. defaults to 3500
-      },
+          'https://ii6g.us10.list-manage.com/subscribe/post?u=b5ea336151ce3aa76e951cb09&amp;id=5d1d98cae3', // string; add your MC list endpoint here; see instructions below
+        timeout: 3500 // number; the amount of time, in milliseconds, that you want to allow mailchimp to respond to your request before timing out. defaults to 3500
+      }
     },
     {
       resolve: `gatsby-source-filesystem`,
       options: {
         path: `${__dirname}/content/blog`,
-        name: `blog`,
-      },
+        name: `blog`
+      }
     },
     {
       resolve: `gatsby-source-filesystem`,
       options: {
         path: `${__dirname}/content/assets`,
-        name: `assets`,
-      },
+        name: `assets`
+      }
     },
     {
       resolve: `gatsby-transformer-remark`,
       options: {
         plugins: [
+          'gatsby-remark-autolink-headers',
           {
             resolve: `gatsby-remark-images`,
             options: {
-              maxWidth: 590,
-            },
+              maxWidth: 590
+            }
           },
           {
             resolve: `gatsby-remark-responsive-iframe`,
             options: {
-              wrapperStyle: `margin-bottom: 1.0725rem`,
-            },
+              wrapperStyle: `margin-bottom: 1.0725rem`
+            }
           },
           `gatsby-remark-prismjs`,
           `gatsby-remark-copy-linked-files`,
-          `gatsby-remark-smartypants`,
+          `gatsby-remark-smartypants`
         ],
-      },
+        tableOfContents: {
+          heading: null,
+          maxDepth: 6
+        }
+      }
     },
     `gatsby-transformer-sharp`,
     `gatsby-plugin-sharp`,
     {
       resolve: `gatsby-plugin-google-analytics`,
       options: {
-        trackingId: `UA-167854855-1`,
-      },
+        trackingId: `UA-167854855-1`
+      }
     },
     `gatsby-plugin-feed`,
     {
@@ -75,18 +80,18 @@ module.exports = {
         background_color: `#ffffff`,
         theme_color: `#663399`,
         display: `minimal-ui`,
-        icon: `content/assets/cheng.png`,
-      },
+        icon: `content/assets/cheng.png`
+      }
     },
     `gatsby-plugin-react-helmet`,
     {
       resolve: `gatsby-plugin-typography`,
       options: {
-        pathToConfigModule: `src/utils/typography`,
-      },
-    },
+        pathToConfigModule: `src/utils/typography`
+      }
+    }
     // this (optional) plugin enables Progressive Web App + Offline functionality
     // To learn more, visit: https://gatsby.dev/offline
     // `gatsby-plugin-offline`,
-  ],
+  ]
 }
