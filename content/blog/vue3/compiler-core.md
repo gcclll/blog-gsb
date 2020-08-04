@@ -16,9 +16,11 @@ tags:
 
 1. <span id="link-01"></span>[test01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-01-some-text)
 
-2. <span id="link-02"></span>[test02: some text <div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-01)
+2. <span id="link-02"></span>[test02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-01)
 
-3. <span id="link-03"></span>[test02: some text <div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-02)
+3. <span id="link-03"></span>[test02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-02)
+
+4. <span id="link-04"></span>[test03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
 
    
 
@@ -60,33 +62,35 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 
 #### <span id="test-text-03"></span>03-text with interpolation
 
+[该用例代码链接 ->](#link-04)
+
 该用例检验的差值的处理。
 
 ```ts
-
-test('text with interpolation', () => {
-  const ast = baseParse('some {{ foo + bar }} text')
-  const text1 = ast.children[0] as TextNode
-  const text2 = ast.children[2] as TextNode
+test("text with interpolation", () => {
+  const ast = baseParse("some {{ foo + bar }} text");
+  const text1 = ast.children[0],
+        text2 = ast.children[2];
 
   expect(text1).toStrictEqual({
     type: NodeTypes.TEXT,
-    content: 'some ',
+    content: "some ",
     loc: {
       start: { offset: 0, line: 1, column: 1 },
+      source: "some ",
       end: { offset: 5, line: 1, column: 6 },
-      source: 'some '
-    }
-  })
+    },
+  });
+
   expect(text2).toStrictEqual({
     type: NodeTypes.TEXT,
-    content: ' text',
+    content: " text",
     loc: {
       start: { offset: 20, line: 1, column: 21 },
+      source: " text",
       end: { offset: 25, line: 1, column: 26 },
-      source: ' text'
-    }
-  })
+    },
+  });
 }
 ```
 
@@ -100,6 +104,30 @@ if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
 ```
 
 完成，因为需要 [parseInterpolation()](#parse-parseInterpolation) 的支持。
+
+用例结果(<font color="green">OK</font>)：
+
+```
+➜  vue-next-code-read git:(master) ✗ jest parse.spec
+ PASS  packages/compiler-core/__tests__/parse.spec.js
+  compiler: parse
+    Text
+      ✓ simple text (4 ms)
+      ✓ simple text with invalid end tag (2 ms)
+      ✓ text with interpolation (47 ms)
+
+  console.log
+    { column: 18, line: 1, offset: 17 } { column: 9, line: 1, offset: 8 } 1
+
+      at parseInterpolation (packages/compiler-core/parse.js:262:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
+Snapshots:   0 total
+Time:        8.776 s
+Ran all test suites matching /parse.spec/i.
+➜  vue-next-code-read git:(master) ✗
+```
 
 
 
@@ -410,6 +438,10 @@ baseParse 内部实现基本就是调用其他方法，所以接下来我们得�
 4. [parseChildren](#parse-parsechildren)，解析子节点
 5. [getSelection](#parse-getselection)，获取选中的未解析的内容
 
+<span id="pic-baseparse"></span>baseParse 函数大体结构和代码调用图示：
+
+![](http://qiniu.ii6g.com/parse-ts-baseparse-0.png?imageMogr2/thumbnail/!100p)
+
 ## createParseContext(context, options)，
 
 函数作用：**创建解析器上下文对象(包含解析过程中的一些记录信息)**
@@ -588,6 +620,10 @@ baseParse 之后的 ast 结构：
 
 阶段代码：[test-01-some-text 测试用例通过](#link-01)
 
+图示：文本解析
+
+![parseChildren-支持纯文本解析](http://qiniu.ii6g.com/parse-ts-parsechildren-text-part.png?imageMogr2/thumbnail/!100p)
+
 ## <span id="parse-parseInterpolation"></span>parseInterpolation(context, mode)
 
 函数声明：
@@ -614,6 +650,10 @@ function parseInterpolation(context, mode) {
     return undefined;
   }
 
+  const start = getCursor(context);
+  advanceBy(context, open.length);
+
+  // 下面是从 {{ 之后的字符串开始解析
   const innerStart = getCursor(context),
     innerEnd = getCursor(context),
     // 插值里面的字符串长度
@@ -624,9 +664,6 @@ function parseInterpolation(context, mode) {
     content = preTrimContent.trim(),
     startOffset = preTrimContent.indexOf(content);
   if (startOffset > 0) {
-    // 说明插值内有空格，所有 startOffset 才会大于 0
-    // 这个时候需要更新 innerStart 的 offset-line-column 定位到第一个 {{ 
-    // 的开头即 { 位置上
     advancePositionWithMutation(innerStart, rawContent, startOffset);
   }
 
@@ -640,12 +677,7 @@ function parseInterpolation(context, mode) {
   // 定位到 }} 位置
   advanceBy(context, close.length);
 
-  // 输出如下图 ->>>>
   console.log(innerEnd, innerStart, "1");
-  
-  // 构造节点类型结构，因为是插值，表达式结构，所以类型需要声明
-  // 另外 isStatic 表示是否为静态数据，不需要计算的类型
-  // isConstant 表示是否为常量类型，结果不会发生改变的
   return {
     type: NodeTypes.INTERPOLATION,
     content: {
@@ -655,22 +687,22 @@ function parseInterpolation(context, mode) {
       content,
       loc: getSelection(context, innerStart, innerEnd),
     },
-    loc: getSelection(context, innerStart),
+    loc: getSelection(context, start),
   };
 }
 ```
 
-![](http://qiniu.ii6g.com/1595559520.png?imageMogr2/thumbnail/!100p)
+![](http://qiniu.ii6g.com/1595570127.png?imageMogr2/thumbnail/!100p)
 
-图中我们看到在经过解析之后 innerStart 和 innerEnd 都数据都正确定位到了相应位置，innerStart 是解析后插值字符串的开始位置(第一个 `{`)，innerEnd是解析后插值字符串的结束位置(最后一个 `}`)。
+图中我们看到在经过解析之后 innerStart 和 innerEnd 都数据都正确定位到了相应位置，innerStart 是解析后插值字符串的开始位置(第一个 `{` offset = 8(<font color="purple">'some {{ '的长度</font>))，innerEnd是解析后插值字符串的结束位置(最后一个 `}` offset = 17(<font color="purple">'some {{ foo + bar '的长度))</font>。
 
 解析之后得到的 `ast.children` 将会有三个节点：
 
 ```json
 (3) [{…}, {…}, {…}]
-0: {type: 2, content: "some ", loc: {…}} // 第一个文本节点
-1: {type: 5, content: {…}, loc: {…}}  // 这里是插值节点
-2: {type: 2, content: "}} text", loc: {…}} // 最后文本节点，为啥包含 }} ???
+0: {type: 2, content: "some ", loc: {…}} // 左侧文本
+1: {type: 5, content: {…}, loc: {…}} // 插值部分
+2: {type: 2, content: " text", loc: {…}} // 右侧文本
 length: 3
 __proto__: Array(0)
 ```
@@ -725,32 +757,59 @@ __proto__: Array(0)
    ```json
    1:
      content: // 这里的数据是经过插值解析之后的模板对象
-       content: "{{ foo + ba" // trim 之后的插值字符串，没有 }} ???
+       content: "foo + bar" // trim 之后的插值字符串，没有 }} ???
        isConstant: false // 非常量类型
        isStatic: false // 非静态节点
        loc:  // 解析之后的该节点在整个模板中的位置信息
-   			// 这里是不是漏了一个 bar 后面的 `r` ???
-         end: {column: 17, line: 1, offset: 16}
-         source: "{{ foo + ba"
-   			// 这里 start 继承了上一级的 loc.start 起始位置
-         start: {column: 6, line: 1, offset: 5}
+   			// 17 -> r 所在的位置
+         end: {column: 18, line: 1, offset: 17}
+         source: "foo + bar"
+   			// 8 -> f 所在的位置，即 start -> end => 'f <-> r'
+         start: {column: 9, line: 1, offset: 8}
        __proto__: Object
-       type: 4 // 插值节点
+       type: 4 // 插值表达式类型
        __proto__: Object
    	loc: // 这里是没经过去尾部空格的位置信息
-   		// 18 -> 'some {{ foo + bar ' 最后一个空格位置
-       end: {column: 19, line: 1, offset: 18} 
-       source: "{{ foo + bar "
+   		// 20 -> 'some {{ foo + bar ' 最后一个空格位置
+       end: {column: 21, line: 1, offset: 20} 
+       source: "{{ foo + bar }}"
    		// 5 -> 'some ' 第一个 { 位置
        start: {column: 6, line: 1, offset: 5} 
        __proto__: Object
-     type: 5
+     type: 5 // 插值类型
      __proto__: Object
    ```
 
-   
+   ​	如上所注释的，第一级的 loc 是通过解析 "{{ foo + bar}}" 在整个模板中的位置信息，content 里面包含的是插值内部的信息，即真正的表达式结构信息。
 
-3. `{type: 2, content: "}} text", loc: {…}}`
+3. `{type: 2, content: " text", loc: {…}}`
+   和第一步中一样，只会经过 parseText(context, mode) 解析出纯文本内容：" text"，最后的结构：
+
+   ```json
+   {
+     type: 2,
+     content: " text",
+     loc: {
+       // 从 text 前面的空格开始记录，"some {{ foo + bar }}" 长度为 20
+       start: { column: 21, line: 1, offset: 20 },
+       source: " text",
+       end: { column: 26, line: 1, offset: 25}
+     }
+   }
+   ```
+
+三步分析完之后，到现在我们应该具备脱离代码就可以直接根据模板得到解析后对应的 children 结构。分析的重点是要得到一个 `{ type, content, loc: { start, source, end }}` 结构的对象。
+
+```json
+// start/end: 
+{ 
+  column/*该节点起始结束的列，从1开始计数的值*/, 
+  line/*该节点模板所在的行，从1开始计数的值*/, 
+  offset/*该节点起始结束的索引，从0开始计数的值*/ 
+}
+```
+
+
 
 <font color="blue">PS: 对于 foo 和 bar 变量数据解析执行结果这块暂时不讨论，也不知道如何做到的，现阶段只关心模板的解析。</font>
 
@@ -830,6 +889,10 @@ function parseText(context: ParserContext, mode: TextModes): TextNode {
 }
 ```
 
+导图：
+
+![parse-text-导图](http://qiniu.ii6g.com/parse-ts-parsetext.png?imageMogr2/thumbnail/!100p)
+
 ## parseTextData(context, length, mode)
 
 文本节点可能包含数据，通过 *context.options.decodeEntities(???)* 来解析。
@@ -882,7 +945,7 @@ function parseTextData(
 }
 ```
 
-
+导图：![parse-textd-ata](http://qiniu.ii6g.com/parse-ts-parsetextdata.png?imageMogr2/thumbnail/!100p)
 
 ## <span id="parse-pushnode"></span>pushNode(nodes, node)
 
