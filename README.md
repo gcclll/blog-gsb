@@ -9,13 +9,98 @@
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/121c35ee-8c99-463a-8641-8151e491c1df/deploy-status)](https://app.netlify.com/sites/gcl-blog/deploys)
 
+# :bust_in_silhouette: Private
+
+## Table Of Contents(增加文章目录)
+
+修改 blog-post.js
+
+```js
+
+  query BlogPostBySlug($slug: String!) {
+    site {
+      siteMetadata {
+        title
+      }
+    }
+    markdownRemark(fields: { slug: { eq: $slug } }) {
+      id
+      excerpt(pruneLength: 160)
+      html
+      // 增加该字段
+      tableOfContents(absolute: false, maxDepth: 2)
+      frontmatter {
+        title
+        date(formatString: "MMMM DD, YYYY")
+        description
+      }
+    }
+  }
+
+```
+
+增加组件：
+
+```react
+<section
+  className="css-toc"
+  dangerouslySetInnerHTML={{ __html: post.tableOfContents }}
+  ></section>
+```
+
+修改 global.scss
+
+```scss
+.css-toc {
+  // color: $titleColor;
+  padding: 15px;
+  // background: #fcfaf2;
+  margin-bottom: 25px;
+  > ul {
+    padding-left: 16px;
+  }
+  ul {
+    list-style-type: square;
+    list-style-position: outside;
+    margin-bottom: 0;
+    p {
+      vertical-align: top;
+      display: inline-block;
+    }
+  }
+  li {
+    margin-bottom: 0;
+  }
+  li > p {
+    margin-bottom: 0;
+  }
+  li > ul {
+    margin-top: 0;
+  }
+}
+
+@media screen and (min-width: 1045px) {
+  .css-toc {
+    position: fixed;
+    bottom: 0;
+    right: 1rem;;
+    width: 250px;
+    max-height: 800px;
+    overflow: scroll;
+    font-size: 14px;
+    li > ul {
+      margin-left: 1rem;
+    }
+  }
+}
+
+```
+
+
+
 ## ⚒ Configuration
 
 ## 👍 Plugins
-
-
-
-
 
 <!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
 

@@ -11,8 +11,6 @@ const BlogPostTemplate = ({ data, pageContext, location, ...more }) => {
   const siteTitle = site.siteMetadata.title
   const { previous, next } = pageContext
 
-  const tocHtml = post.tableOfContents
-
   return (
     <Layout location={location} title={siteTitle}>
       <SEO
@@ -42,7 +40,7 @@ const BlogPostTemplate = ({ data, pageContext, location, ...more }) => {
         </header>
         <section
           className="css-toc"
-          dangerouslySetInnerHTML={{ __html: tocHtml }}
+          dangerouslySetInnerHTML={{ __html: post.tableOfContents }}
         ></section>
         <section dangerouslySetInnerHTML={{ __html: post.html }} />
         <hr
