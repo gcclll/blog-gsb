@@ -14,61 +14,6 @@ tags:
 
 
 
-<ul class="css-toc">
-<li><a href="/vue3/compiler-core/#%E9%98%B6%E6%AE%B5%E4%BB%A3%E7%A0%81%E8%AE%B0%E5%BD%95">阶段代码记录</a></li>
-<li>
-<p><a href="/vue3/compiler-core/#%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E5%88%86%E6%9E%90">测试用例分析</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#parsespects">parse.spec.ts</a></li>
-</ul>
-</li>
-<li>
-<p><a href="/vue3/compiler-core/#span-idfile-parsespanparsets"><span id="file-parse"></span>parse.ts</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#baseparsecontext-options">baseParse(context, options)</a></li>
-<li><a href="/vue3/compiler-core/#createparsecontextcontext-options%EF%BC%8C">createParseContext(context, options)，</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-parsechildrenspanparsechildrencontext-mode-ancestors"><span id="parse-parsechildren"></span>parseChildren(context, mode, ancestors)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-parseinterpolationspanparseinterpolationcontext-mode"><span id="parse-parseInterpolation"></span>parseInterpolation(context, mode)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-parsetagspanparsetagcontext-type-parent"><span id="parse-parsetag"></span>parseTag(context, type, parent)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-parsetextspanparsetextcontext-mode"><span id="parse-parsetext"></span>parseText(context, mode)</a></li>
-<li><a href="/vue3/compiler-core/#parsetextdatacontext-length-mode">parseTextData(context, length, mode)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-pushnodespanpushnodenodes-node"><span id="parse-pushnode"></span>pushNode(nodes, node)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-isendspanisendcontext-mode-ancestors"><span id="parse-isend"></span>isEnd(context, mode, ancestors)</a></li>
-<li><a href="/vue3/compiler-core/#getcursorcontext">getCursor(context)</a></li>
-<li><a href="/vue3/compiler-core/#span-idparse-getselectionspangetselectioncontext-start-end-postion"><span id="parse-getselection"></span>getSelection(context, start, end?: Postion)</a></li>
-</ul>
-</li>
-<li>
-<p><a href="/vue3/compiler-core/#astts">ast.ts</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#span-idfile-ast-createrootspancreaterootchildren-loc--locstub"><span id="file-ast-createroot"></span>createRoot(children, loc = locStub)</a></li>
-</ul>
-</li>
-<li>
-<p><a href="/vue3/compiler-core/#utilsts">utils.ts</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#advancepositionwithmutationpossource-numberofcharacters">advancePositionWithMutation(pos,source, numberOfCharacters)</a></li>
-</ul>
-</li>
-<li>
-<p><a href="/vue3/compiler-core/#%E5%8F%98%E9%87%8F%E5%A3%B0%E6%98%8E">变量声明</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B">枚举类型</a></li>
-<li><a href="/vue3/compiler-core/#parser">parser</a></li>
-</ul>
-</li>
-<li>
-<p><a href="/vue3/compiler-core/#%E7%B1%BB%E5%9E%8B%E5%A3%B0%E6%98%8E">类型声明</a></p>
-<ul>
-<li><a href="/vue3/compiler-core/#astts-1">ast.ts</a></li>
-<li><a href="/vue3/compiler-core/#span-idtd-parser-optionsspanparseroptions"><span id="td-parser-options"></span>ParserOptions</a></li>
-<li><a href="/vue3/compiler-core/#span-idtd-parser-contextspanparsercontext"><span id="td-parser-context"></span>ParserContext</a></li>
-</ul>
-</li>
-</ul>
-
-
-
 # 阶段代码记录
 
 1. <span id="link-01"></span>[test01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-01-some-text)

@@ -1,15 +1,18 @@
-import React from "react"
-import { Link, graphql } from "gatsby"
+import React from 'react'
+import { Link, graphql } from 'gatsby'
 
-import Bio from "../components/bio"
-import Layout from "../components/layout"
-import SEO from "../components/seo"
-import { rhythm, scale } from "../utils/typography"
+import Bio from '../components/bio'
+import Layout from '../components/layout'
+import SEO from '../components/seo'
+import { rhythm, scale } from '../utils/typography'
 
-const BlogPostTemplate = ({ data, pageContext, location }) => {
-  const post = data.markdownRemark
-  const siteTitle = data.site.siteMetadata.title
+const BlogPostTemplate = ({ data, pageContext, location, ...more }) => {
+  const { markdownRemark: post, allMarkdownRemark: node, site } = data
+  const siteTitle = site.siteMetadata.title
   const { previous, next } = pageContext
+
+  const tocHtml = node?.edges.filter(it => it.node.id === post.id)[0]?.node
+    ?.tableOfContents
 
   return (
     <Layout location={location} title={siteTitle}>
@@ -22,7 +25,7 @@ const BlogPostTemplate = ({ data, pageContext, location }) => {
           <h1
             style={{
               marginTop: rhythm(1),
-              marginBottom: 0,
+              marginBottom: 0
             }}
             className="title is-1"
           >
@@ -32,16 +35,20 @@ const BlogPostTemplate = ({ data, pageContext, location }) => {
             style={{
               ...scale(-1 / 5),
               display: `block`,
-              marginBottom: rhythm(1),
+              marginBottom: rhythm(1)
             }}
           >
             {post.frontmatter.date}
           </p>
         </header>
+        <section
+          className="css-toc"
+          dangerouslySetInnerHTML={{ __html: tocHtml }}
+        ></section>
         <section dangerouslySetInnerHTML={{ __html: post.html }} />
         <hr
           style={{
-            marginBottom: rhythm(1),
+            marginBottom: rhythm(1)
           }}
         />
         <footer>
@@ -56,7 +63,7 @@ const BlogPostTemplate = ({ data, pageContext, location }) => {
             flexWrap: `wrap`,
             justifyContent: `space-between`,
             listStyle: `none`,
-            padding: 0,
+            padding: 0
           }}
         >
           <li>
@@ -96,6 +103,21 @@ export const pageQuery = graphql`
         title
         date(formatString: "MMMM DD, YYYY")
         description
+      }
+    }
+    allMarkdownRemark {
+      edges {
+        node {
+          id
+          fields {
+            slug
+          }
+          excerpt(format: HTML)
+          tableOfContents(absolute: true, maxDepth: 2)
+          wordCount {
+            words
+          }
+        }
       }
     }
   }
