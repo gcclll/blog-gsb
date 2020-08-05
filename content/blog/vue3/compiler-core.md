@@ -24,6 +24,8 @@ tags:
 
 4. <span id="link-04"></span>[test03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
 
+5. <span id="link-05"></span>[test04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
+
    
 
 # 测试用例分析
@@ -61,6 +63,126 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 测试用例结构：compiler: parse
 
 ### Text 文本解析
+
+#### <span id="test-text-05"></span> 05-text with mix of tags and interpolations
+
+```ts
+
+test('text with mix of tags and interpolations', () => {
+  const ast = baseParse('some <span>{{ foo < bar + foo }} text</span>')
+  const text1 = ast.children[0] as TextNode
+  const text2 = (ast.children[1] as ElementNode).children![1] as TextNode
+
+  expect(text1).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: 'some ',
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 5, line: 1, column: 6 },
+      source: 'some '
+    }
+  })
+  expect(text2).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: ' text',
+    loc: {
+      start: { offset: 32, line: 1, column: 33 },
+      end: { offset: 37, line: 1, column: 38 },
+      source: ' text'
+    }
+  })
+}
+```
+
+这是个标签+插值混合模板，现阶段的代码是通不过该测试的，因为它会进入到下面这个分支：
+
+```js
+else if (/[a-z]/i.test(s[2])) {
+  // 这里都出错了，为啥后面还有个 parseTag ???
+  // 到这里就会报错
+  emitError(context, ErrorCodes.X_INVALID_END_TAG)
+  parseTag(context, TagType.End, parent)
+  continue
+} else {
+```
+
+如控制台输出：
+
+![](http://qiniu.ii6g.com/1596638044.png?imageMogr2/thumbnail/!100p)
+
+错误上面的输出其实是 }} 和 {{ 的解析位置信息。
+
+1. <font color="blue">右边： offset=14 刚好是 `some <span>{{ ` 字符串长度 + 1 即插值内第一个空格的位置</font>
+
+2. <font color="blue">左边：offset=29 刚好是 14 + `foo < bar + foo` 长度位置(slice 不包含 endIdx)， 即插值内最后一个空格的位置</font>
+
+接下来我们得看下怎么不报错能解析 `</div>` 。
+
+#### <span id="test-text-04"></span>04-text with interpolation which has `<`
+
+```ts
+
+test('text with interpolation which has `<`', () => {
+  const ast = baseParse('some {{ a<b && c>d }} text')
+  const text1 = ast.children[0] as TextNode
+  const text2 = ast.children[2] as TextNode
+
+  expect(text1).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: 'some ',
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 5, line: 1, column: 6 },
+      source: 'some '
+    }
+  })
+  expect(text2).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: ' text',
+    loc: {
+      start: { offset: 21, line: 1, column: 22 },
+      end: { offset: 26, line: 1, column: 27 },
+      source: ' text'
+    }
+  })
+})
+```
+
+
+
+这个用例其实和 [03-text with interpolation](#test-text-03) 用例原理一样，虽然插值里面有特殊字符 `<`，但是由于在 [parseInterpolation](#parse-parseInterpolation) 函数解析过程中是通过截取 {{ 到 }} 直接的全部字符串去解析的。
+
+```ts
+
+function parseInterpolation(
+  context: ParserContext,
+  mode: TextModes
+): InterpolationNode | undefined {
+  // ... 省略
+  
+  // 也就是这两行，将 {{ ... }} 内的所有内容一次性取出来解析了，因此并不会
+  // 进入到 parseChildren 的 while 循环中处理，也就不会出现异常情况
+  const rawContentLength = closeIndex - open.length
+  const rawContent = context.source.slice(0, rawContentLength)
+  
+  // ... 省略
+}
+```
+
+所以这个用例会很顺利的通过(在 03 用例通过的前提下)。
+
+```
+ PASS  packages/compiler-core/__tests__/parse.spec.js (5.375 s)
+  compiler: parse
+    Text
+      ✓ simple text (5 ms)
+      ✓ simple text with invalid end tag (3 ms)
+      ✓ text with interpolation (41 ms)
+      ✓ text with interpolation which has `<` (3 ms)
+
+```
+
+
 
 #### <span id="test-text-03"></span>03-text with interpolation
 
@@ -697,6 +819,8 @@ function parseInterpolation(context, mode) {
 ![](http://qiniu.ii6g.com/1595570127.png?imageMogr2/thumbnail/!100p)
 
 图中我们看到在经过解析之后 innerStart 和 innerEnd 都数据都正确定位到了相应位置，innerStart 是解析后插值字符串的开始位置(第一个 `{` offset = 8(<font color="purple">'some {{ '的长度</font>))，innerEnd是解析后插值字符串的结束位置(最后一个 `}` offset = 17(<font color="purple">'some {{ foo + bar '的长度))</font>。
+
+![](http://qiniu.ii6g.com/parse-ts-parseinterpolation.png?imageMogr2/thumbnail/!100p)
 
 解析之后得到的 `ast.children` 将会有三个节点：
 
