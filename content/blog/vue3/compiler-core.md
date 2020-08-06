@@ -17,16 +17,66 @@ tags:
 # 阶段代码记录
 
 1. <span id="link-01"></span>[test01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-01-some-text)
-
 2. <span id="link-02"></span>[test02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-01)
-
 3. <span id="link-03"></span>[test02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-02)
-
 4. <span id="link-04"></span>[test03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
-
 5. <span id="link-05"></span>[test04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
 
-   
+# 问题/疑问列表
+
+1. <font color="red">为什么 [parseTag](#parse-parsetag) 解析 `<div>` 之后只会得到 `<div` 而不会将 `>` 解析进去？[🛫](#parse-parseelement)</font>
+   答：是因为我们漏掉实现了一部分代码，自闭合标签的检测，移动指针(2/1位)
+
+   ```js
+   function parseTag(context, type) {
+     // .... 省略
+     
+     
+     // TODO-3 <div/> 自闭标签
+     // 这里要实现，不然最后解析完成之后 source 会是：>...</span>
+     // 需要检测下是不是自闭合标签来移动指针位置
+     let isSelfClosing = false
+     if (context.source.length === 0) {
+       emitError(context, ErrorCodes.EOF_IN_TAG)
+     } else {
+       // some <div> ... </div> 到这里的 source = > ... </div>
+       // 所以可以检测是不是以 /> 开头的
+       isSelfClosing = context.source.startsWith('/>')
+       if (type === TagType.End && isSelfClosing) {
+         emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+       }
+       // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
+       // 到这里 source = ... </div>
+       advanceBy(context, isSelfClosing ? 2 : 1)
+     }
+     
+     // ... 省略
+   }
+   ```
+
+2. <font color="red">为什么 [parseElement](#parse-parseelement) 解析 children 的时候先 ancestors.push(element) 解析之后又 pop() 掉？
+   </font>
+   答：要回到这个问题要从 parseChildren 和 parseElement 两个函数结合来看，如下代码分析
+
+   ```ts
+   // 解析流程(用例5)：
+   // 1. 先 parseChildren(context, mode, ancestors) 
+   // 解析 `some <span>{{ foo < bar + foo }} text</span>`
+   //   1) 首先得到的是 `some ` 文本节点
+   //   2) 检测到 <span> 进入标签解析 parseElement(context, ancestors) 注意这里的 		//				ancestors，是由 parseChildren 继承过来的
+   // 2. 进入 parseElement 解析进程
+   //   	1) 遇到 <span> 解析出标签节点 span
+   //   	2) 在自身函数内检测到标签内还有内容，重新调用 parseChildren(..., ancestors) 
+   //    3) 所以重点来了
+   // ...
+   // ...
+   // ancestors 是 parseChildren 传递过来的，parseElement 里面将
+   // push 的目的：让子节点有所依赖，知道自己的父级是谁，但好像 parseChildren 里面用到 
+   // 		parent 也是为了获取命名空间去用了
+   // pop 的目的：难道是为了不污染 ancestors ???
+   ```
+
+   好像还不是很明确为何要 push->pop。
 
 # 测试用例分析
 
@@ -63,6 +113,56 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 测试用例结构：compiler: parse
 
 ### Text 文本解析
+
+#### <span id="test-text-05"></span> 06-lonly "<" don\'t separate nodes
+
+```js
+
+test('lonly "<" don\'t separate nodes', () => {
+  const ast = baseParse('a < b', {
+    onError: (err) => {
+      if (err.code !== ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME) {
+        throw err
+      }
+    }
+  })
+  const text = ast.children[0]
+
+  expect(text).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: 'a < b',
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 5, line: 1, column: 6 },
+      source: 'a < b'
+    }
+  }) // lonly "<" don\'t separate nodes
+}
+```
+
+这个用例在实现的 [test-05](#test-text-05) 之后就可以通过，因为 `a < b` 并不是插值一部分，会被当做纯文本处理，而为了避免报错用例中重写了 `onError`，因为 while 循环里在检测到 `<` 开头的 if 条件分支中，第二个字符为空格的情况会进入最后的 else 分支处理，即触发 `INVALID_FIRST_CHARACTER_OF_TAG_NAME` 异常。
+
+```js
+
+} else if (mode === TextModes.DATA && s[0] === '<') {
+  // ... 标签开头 <...
+  if (s.length === 1) {
+    emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
+  } else if (s[1] === '!') {
+    // TODO 注释处理，<!-- ...
+  } else if (s[1] === '/') {
+    // ...
+  } else if (/[a-z]/i.test(s[1])) {
+   // ...
+  } else if (s[1] === '?') {
+   // ...
+  } else {
+    // 会进入到这里，触发异常，但是由于 options 里提供了 onError 重写了它
+    // 因此这里不会触发异常，而是退出该分支进入 纯文本处理，合并文本 pushnode 操作
+    emitError(context, ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME, 1)
+  }
+}
+```
 
 #### <span id="test-text-05"></span> 05-text with mix of tags and interpolations
 
@@ -110,13 +210,41 @@ else if (/[a-z]/i.test(s[2])) {
 
 ![](http://qiniu.ii6g.com/1596638044.png?imageMogr2/thumbnail/!100p)
 
-错误上面的输出其实是 }} 和 {{ 的解析位置信息。
+错误上面的输出其实是 }} 和 {{ 的解析位置信息，并且 `<div>` 并没有解析是因为我们还没实现 [parseElement](#parse-parseelement) 分支逻辑，所以直接过滤掉当成文本处理了。
 
 1. <font color="blue">右边： offset=14 刚好是 `some <span>{{ ` 字符串长度 + 1 即插值内第一个空格的位置</font>
 
 2. <font color="blue">左边：offset=29 刚好是 14 + `foo < bar + foo` 长度位置(slice 不包含 endIdx)， 即插值内最后一个空格的位置</font>
 
 接下来我们得看下怎么不报错能解析 `</div>` 。
+
+<font color="green">*大概的猜想是在解析 `<div>`的时候发现是标签，可能会重写 `onError` ，避免在解析 `</div>` 触发异常，而是进入 [parseTag](#parse-parsetag) 解析结束标签。但很可惜不是这样，而是在 [parseElement](#parse-parselement) 中递归调用 [parseChildren](#parse-parsechildren) 解析标签内部的模板，解析完成之后检测结束标签，无结束标签，非法异常，具体实现请看 [parseElement源码实现](#parse-parseelement)。*</font>
+
+在实现了 [parseElement](#parse-parseelement) 和部分 [parseTag](#parse-parsetag) 之后用例通过：
+
+```
+➜  packages git:(master) ✗ jest compiler-core
+ PASS  compiler-core/__tests__/parse.spec.js (14.492 s)
+  compiler: parse
+    Text
+      ✓ simple text (5 ms)
+      ✓ simple text with invalid end tag (2 ms)
+      ✓ text with interpolation (2 ms)
+      ✓ text with interpolation which has `<` (1 ms)
+      ✓ text with mix of tags and interpolations (2 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        15.743 s
+Ran all test suites matching /compiler-core/i.
+```
+
+期间碰到个问题：
+
+> Cannot find module 'core-js/modules/es6.string.iterator' from 'packages/compiler-core/parse.js'
+
+解决方案：[是 core-js 降级到 2](https://github.com/babel/babel/issues/9796)
 
 #### <span id="test-text-04"></span>04-text with interpolation which has `<`
 
@@ -748,6 +876,240 @@ baseParse 之后的 ast 结构：
 
 ![parseChildren-支持纯文本解析](http://qiniu.ii6g.com/parse-ts-parsechildren-text-part.png?imageMogr2/thumbnail/!100p)
 
+## <span id="parse-parseelement"></span>parseElement(context, mode)
+
+这个解析函数，用来解析 `<div>` 标签。
+
+### 阶段一([test-05](#test-text-05))
+
+[some \<span>{{ foo < bar + foo }} text\</span>](#test-text-05)
+
+此阶段只实现对 `<div>...</div>` 的解析，不包含属性等等其他复杂情况，因为只需要能通过用例5就行。
+
+```js
+
+function parseElement(context, ancestors) {
+  // assert context.source 是以 <[a-z] 开头的
+
+  const wasInPre = context.inPre
+  const wasInVPre = context.inVPre
+  // 取 ancestors 最后一个节点 node
+  const parent = last(ancestors)
+  const element = parseTag(context, TagType.Start, parent)
+
+  // pre or v-pre
+  const isPreBoundary = context.inPre && !wasInVPre
+  const isVPreBoundary = context.inVPre && !wasInVPre
+
+  // 自闭合的到这里就可以结束了
+  if (element.isSelfClosing || context.options.isVoidTag?.(element.tag)) {
+    return element
+  }
+  
+  // 子元素 children，被漏掉的代码，会进入递归调用 parseChildren 去解析
+	// <span>...</span> 标签内的模板
+  ancestors.push(element)
+	const mode = context.options.getTextMode(element, parent)
+	const children = parseChildren(context, mode, ancestors)
+ 
+	ancestors.pop()
+	element.children = children
+  // P1.... 解析之后 children 里面应该包含两个 node
+  // node1: 插值内容 `foo < bar + foo`
+  // node2: 文本节点 ` text`
+  console.log(element)
+
+  // 结束标签？ <span></span> 这种类型？
+  // 上面会解析标签内的模板，解析完之后 source 正常应该会是 `</span> ....`
+  // 进入 if 解析结束标签
+  if (startsWithEndTagOpen(context.source, element.tag)) {
+    parseTag(context, TagType.End, parent)
+  } else {
+    // 会进入到这里出现报错
+    emitError(context, ErrorCodes.X_MISSING_END_TAG, 0, element.loc.start)
+    if (context.source.length === 0 && element.tag.toLowerCase() === 'script') {
+      const first = children[0]
+      if (first && first.loc.source.startsWith('<!--')) {
+        emitError(context, ErrorCodes.EOF_IN_SCRIPT_HTML_COMMENT_LIKE_TEXT)
+      }
+    }
+  }
+
+  element.loc = getSelection(context, element.loc.start)
+  console.log(element, 'after')
+
+  if (isPreBoundary) {
+    context.inPre = false
+  }
+
+  if (isVPreBoundary) {
+    context.inVPre = false
+  }
+
+  return element
+}
+```
+
+实现到这里是为了想看下经过 [parseTag](#parse-parsetag) 之后的 element 是什么？parseTag 里面有个正则是用来匹配开始或结束标签的，即： `/^<\/?([a-z][^\t\r\n\f />]*)/i` 这个既可以匹配开始标签，也可以匹配结束标签，并且考虑了 `<div   >` 有空格的情况，忽略大小写。
+
+正则匹配测试结果：
+
+```
+/^<\/?([a-z][^\t\r\n\f />]*)/i.exec('<span>')
+(2) ["<span", "span", index: 0, input: "<span>", groups: undefined]
+```
+
+所以这里首先匹配解析的是开始标签 `<div>` 。
+
+```json
+// some <span>{{ foo < bar + foo }} text</span>
+// parseTag 之后的 element
+{
+    "type":1, // 节点类型是 NodeTypes.ELEMENT
+    "ns":0, // 命名空间就是 HTML
+    "tag":"span", 
+    "tagType":0, // 标签类型 ElementTypes.ELEMENT
+    "props":[ // 标签属性，这里没有
+    ],
+    "isSelfClosing":false, // 是不是自闭合标签，如：<img/>
+    "children":[],
+    "loc":{
+        "start":{
+            "column":6, // column 不换行的情况下为 offset + 1，从 1 开始计数
+            "line":1, // 没换行符
+            "offset":5 // <span> 的 < 开始位置索引 `some `.length = 5
+        },
+        "end":{
+            "column":12,
+            "line":1,
+          	// 这里值的变化分两步
+          	// parseTag:start 的时候
+						// 1. 解析出 <span ，这个时候 offset 其实是 10
+						// 2. 检测是不是自闭合标签，决定 advancedBy 
+            // 移动指针位置数(自闭合：2，非自闭合：1)，到这里 offset = 11
+            "offset":11 
+        },
+        "source":"<span>" // 为什么不是 `<span>` ??? 漏了自闭合标签检测指针移位
+    }
+}
+```
+
+解析之后 context 内容变化：
+
+```json
+{
+    "options":{
+        // 忽略选项，目前对我们没啥用
+    },
+    "column":12,
+    "line":1,
+    "offset":11, // <span> 后面的 > 索引
+    "originalSource":"some <span>{{ foo < bar + foo }} text</span>",
+  	// 解析之后的模板，为何 > 没被去掉???，见 问题1
+    "source":"{{ foo < bar + foo }} text</span>",
+    "inPref":false,
+    "inVPref":false
+}
+```
+
+到此我们已经解析除了 `<span>` 开始标签，这个时候的 `node.childrens = []`，下一步解析标签里面的内容。
+
+在实现完整的 parseElement 之后发现执行会报错，因为这个用例并不是 `<span></span>` 标签内没东西，所以会进入 else 触发 `emitError()`，那不是没法往下走了？？？
+
+```js
+// 子元素 children，被漏掉的代码，会进入递归调用 parseChildren 去解析
+// <span>...</span> 标签内的模板
+ancestors.push(element)
+const mode = context.options.getTextMode(element, parent)
+const children = parseChildren(context, mode, ancestors)
+ancestors.pop()
+element.children = children
+// ...........☝🏻.☝🏻.☝🏻.☝🏻.☝🏻，加回去
+
+if (startsWithEndTagOpen(context.source, element.tag)) {
+  parseTag(context, TagType.End, parent)
+} else {
+  emitError(context, ErrorCodes.X_MISSING_END_TAG, 0, element.loc.start)
+  if (context.source.length === 0 && element.tag.toLowerCase() === 'script') {
+    const first = children[0]
+    if (first && first.loc.source.startsWith('<!--')) {
+      emitError(context, ErrorCodes.EOF_IN_SCRIPT_HTML_COMMENT_LIKE_TEXT)
+    }
+  }
+}
+```
+
+那是因为前面漏了一段代码。
+
+代码加上之后最后代码 P1 出的输出 ancestors 里面会有一个子节点(element)：
+
+```json
+// ancestors[{...}]，ancestors 第一个节点是 <span> 这个节点
+// 重点我们要看的是这个节点的 children 因为其内部有 `{{ foo < bar + foo }} text`
+// 所以它 的 element 应该有两个节点：`foo < bar + foo` 和 ` text`
+{
+    // <span> 节点本身的属性，我们重点需要关注的是 children
+    "children":[
+        { // 第一个 child 是 {{ ... }} 检测到插值进入 parseInterpolation 分支
+          // 处理，得到下面的节点结构，插值解析在 parseInterpolation 一章有分析过了
+            "type":5,
+            "content":{
+                "type":4,
+                "isStatic":false,
+                "isConstant":false,
+                "content":"foo < bar + foo",
+                "loc":{
+                    "start":{
+                        "column":15,
+                        "line":1,
+                        "offset":14
+                    },
+                    "end":{
+                        "column":30,
+                        "line":1,
+                        "offset":29
+                    },
+                    "source":"foo < bar + foo"
+                }
+            },
+            "loc":{
+                "start":{
+                    "column":12,
+                    "line":1,
+                    "offset":11
+                },
+                "end":{
+                    "column":33,
+                    "line":1,
+                    "offset":32
+                },
+                "source":"{{ foo < bar + foo }}"
+            }
+        },
+        {
+            "type":2,
+            "content":" text",
+            "loc":{
+                "start":{
+                    "column":33,
+                    "line":1,
+                    "offset":32
+                },
+                "end":{
+                    "column":38,
+                    "line":1,
+                    "offset":37
+                },
+                "source":" text"
+            }
+        }
+    ],
+    // <span> 本身节点的 loc
+}
+```
+
+这里也没什么好解释的，插值在 [parseInterpolation](#parse-parseinterpolation) 处分析过了，文本解析在 [parseText](#parse-parsetext) 处分析了。
+
 ## <span id="parse-parseInterpolation"></span>parseInterpolation(context, mode)
 
 函数声明：
@@ -941,7 +1303,7 @@ __proto__: Array(0)
 
 ## <span id="parse-parsetag"></span>parseTag(context, type, parent)
 
-### 问题
+### 阶段一(`simple text</div>`)
 
 1. 为什么只匹配 `</div` 而忽略掉最后一个 `>`???
 
@@ -976,7 +1338,87 @@ function parseTag(context, type, parent) {
 }
 ```
 
+### 阶段二([test-05](#test-text-05))
 
+满足用例 5(`some <span>{{ foo < bar + foo }} text</span>`) 的代码实现，这里只需要能解析 `<span> ... </span>` 标签就可以，没有 `pre`,`v-pre`,`<span/>自闭合标签`，因此下面省略这几部分检测代码。
+
+```js
+
+function parseTag(context, type, parent) {
+  // 获取当前解析的起始位置，此时值应该是 some text 的长度
+  const start = getCursor(context)
+  // 匹配 </div 过滤掉空格字符，但是为什么要把 > 给忽略掉???
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)
+  const tag = match[1]
+  const ns = context.options.getNamespace(tag, parent)
+  // log1: 改变位移，将 offset 定位到 </div> 的最有一个 > 上
+  // 在这里 context.offset = 10, context.line = 1
+  advanceBy(context, match[0].length)
+  // 过滤掉空格
+  advanceSpaces(context)
+  // log2: 经过 advance之后 context.offset = 15, context.line = 1
+  // 正好过滤 </div 5个字符
+  const cursor = getCursor(context)
+  const currSource = context.source
+
+  // TODO-1 解析标签元素的属性
+
+  // TODO-2 in pre ...
+
+  // TODO-3 v-pre 指令
+
+  // TODO-3 <div/> 自闭标签
+  // 这里要实现，不然最后解析完成之后 source 会是：>...</span>
+  // 需要检测下是不是自闭合标签来移动指针位置
+  let isSelfClosing = false
+  if (context.source.length === 0) {
+    emitError(context, ErrorCodes.EOF_IN_TAG)
+  } else {
+    // some <div> ... </div> 到这里的 source = > ... </div>
+    // 所以可以检测是不是以 /> 开头的
+    isSelfClosing = context.source.startsWith('/>')
+    if (type === TagType.End && isSelfClosing) {
+      emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+    }
+    // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
+    // 到这里 source = ... </div>
+    advanceBy(context, isSelfClosing ? 2 : 1)
+  }
+
+  let tagType = ElementTypes.ELEMENT
+  const options = context.options
+  // 不是 v-pre，且不是自定义组件，这个 if 目的是为了检测并改变
+  // tagType 标签类型
+  if (!context.inVPre && !options.isCustomElement(tag)) {
+    // TODO-4 检测 tagType
+  }
+
+  return {
+    type: NodeTypes.ELEMENT,
+    ns,
+    tag,
+    tagType,
+    props,
+    isSelfClosing: false, // TODO
+    children: [],
+    loc: getSelection(context, start),
+    codegenNode: undefined
+  }
+}
+```
+
+要能通过[用例5](#test-text-05) 必须搭配 [parseElement(context, ancestors) ](#parse-parseelement) 才行，并且重点在 parseElement 中，因为有了开始标签才会有结束标签的解析，不然会触发结束标签解析分支里面的 error: 
+
+```js
+else if (/[a-z]/i.test(s[2])) {
+  // 这里都出错了，为啥后面还有个 parseTag ???
+  emitError(context, ErrorCodes.X_INVALID_END_TAG)
+  parseTag(context, TagType.End, parent)
+  continue
+}
+```
+
+因此如果这里不会触发 X_INVALID_END_TAG 那必定是 parseElement 里面做了什么处理，这个实现了 parseElement 才得以知晓(目前只是猜测~~~)，[传送门 🚪>>>](#parse-parseelement)
 
 ## <span id="parse-parsetext"></span>parseText(context, mode)
 
