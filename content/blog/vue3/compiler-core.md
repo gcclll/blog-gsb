@@ -119,7 +119,7 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 
 #### <span id="test-element-01"></span>01-simple div
 
-解析结果流程图：
+解析结果流程图(xmind 画流程图真实low的不行，😅)：
 
 ![](http://qiniu.ii6g.com/parse-test-element--01.png?imageMogr2/thumbnail/!100p)
 
