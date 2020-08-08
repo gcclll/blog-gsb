@@ -16,11 +16,12 @@ tags:
 
 # 阶段代码记录
 
-1. <span id="link-01"></span>[test01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-01-some-text)
-2. <span id="link-02"></span>[test02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-01)
-3. <span id="link-03"></span>[test02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-02-some-text-div-02)
-4. <span id="link-04"></span>[test03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
-5. <span id="link-05"></span>[test04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/test-03-interpolation)
+1. <span id="link-01"></span>[text01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-01-some-text)
+2. <span id="link-02"></span>[text02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-01)
+3. <span id="link-03"></span>[text02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-02)
+4. <span id="link-04"></span>[text03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)
+5. <span id="link-05"></span>[text04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)
+6. <span id="link-06"></span>[comment: <!--x-->注释解析代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/comment-test)
 
 # 问题/疑问列表
 
@@ -112,7 +113,439 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 
 测试用例结构：compiler: parse
 
+### Element 元素标签解析
+
+<span id="test-element-02"></span>02-empty div
+
+#### <span id="test-element-01"></span>01-simple div
+
+解析结果流程图：
+
+![](http://qiniu.ii6g.com/parse-test-element--01.png?imageMogr2/thumbnail/!100p)
+
+因为 [parseElement](#parse-parseelement) 已经实现，因此这个顺利通过，`parseElement` 解析先检测 `</div>` 结束标签位置，如果没有则为非法无结束标签触发 `ErrorCodes.EOF_IN_TAG` 异常。
+
+```js
+
+test('simple div', () => {
+  const ast = baseParse('<div>hello</div>')
+  const element = ast.children[0]
+
+  expect(element).toStrictEqual({
+    type: NodeTypes.ELEMENT,
+    ns: Namespaces.HTML,
+    tag: 'div',
+    tagType: ElementTypes.ELEMENT,
+    codegenNode: undefined,
+    props: [],
+    isSelfClosing: false, // <div 后为 > 为非自闭合标签
+    children: [
+      {
+        type: NodeTypes.TEXT,
+        content: 'hello',
+        loc: {
+          start: { offset: 5, line: 1, column: 6 }, // h 位置索引
+          end: { offset: 10, line: 1, column: 11 }, // o 位置索引
+          source: 'hello'
+        }
+      }
+    ],
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 16, line: 1, column: 17 },
+      // 遇到<div> 会直接判断是否有 </div> 然后截取`<div>...</div>
+      source: '<div>hello</div>' 
+    }
+  })
+})
+```
+
+标签的解析在 [parseTag](#parse-parsetag) 中完成， 如果是自闭合标签，会置标志位 `isSelfClosing = true`。
+
+并且解析标签只会解析到 `<div>` 中的 `<div` 部分就结束，是因为需要检测后面是 `>` 还是 `/>` 如果是 `/>` 则为自闭合标签需要区分处理，因此这里会有个判断来决定 `advanceBy` 1 或 2 个指针位置。
+
+```js
+// parseTag
+let isSelfClosing = false
+if (context.source.length === 0) {
+  emitError(context, ErrorCodes.EOF_IN_TAG)
+} else {
+  // some <div> ... </div> 到这里的 source = > ... </div>
+  // 所以可以检测是不是以 /> 开头的
+  isSelfClosing = context.source.startsWith('/>')
+  if (type === TagType.End && isSelfClosing) {
+    emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+  }
+  // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
+  // 到这里 source = ... </div>
+  advanceBy(context, isSelfClosing ? 2 : 1)
+}
+```
+
+
+
+### Comment 注释解析
+
+注释风格：`<!-- ... -->`，[阶段5](#link-05) 及之前还不支持注释解析，因为还没实现 [parseComment](#parse-parsecomment)。
+
+注释测试用例不存在阶段性的实现，只要实现了 [parseComment](#parse-parsecomment) 就饿都可以通过了，因此这里放在一起通过记录。
+
+1. **empty comment** 空注释节点
+2. **simple comment** 正常注释节点
+3. **two comments** 多个注释节点
+
+```js
+
+describe('Comment', () => {
+  test('empty comment', () => {
+    const ast = baseParse('<!---->')
+    const comment = ast.children[0]
+
+    expect(comment).toStrictEqual({
+      type: NodeTypes.COMMENT,
+      content: '',
+      loc: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 7, line: 1, column: 8 },
+        source: '<!---->'
+      }
+    })
+  }) // empty comment
+
+  test('simple comment', () => {
+    const ast = baseParse('<!--abc-->')
+    const comment = ast.children[0]
+
+    expect(comment).toStrictEqual({
+      type: NodeTypes.COMMENT,
+      content: 'abc',
+      loc: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 10, line: 1, column: 11 },
+        source: '<!--abc-->'
+      }
+    })
+  }) // simple comment
+
+  test('two comments', () => {
+    const ast = baseParse('<!--abc--><!--def-->')
+    const comment1 = ast.children[0]
+    const comment2 = ast.children[1]
+
+    expect(comment1).toStrictEqual({
+      type: NodeTypes.COMMENT,
+      content: 'abc',
+      loc: {
+        start: { offset: 0, line: 1, column: 1 },
+        end: { offset: 10, line: 1, column: 11 },
+        source: '<!--abc-->'
+      }
+    })
+    expect(comment2).toStrictEqual({
+      type: NodeTypes.COMMENT,
+      content: 'def',
+      loc: {
+        start: { offset: 10, line: 1, column: 11 },
+        end: { offset: 20, line: 1, column: 21 },
+        source: '<!--def-->'
+      }
+    })
+  }) // two comments
+})
+```
+
+这里总共有三个用例，一开始测试并不能通过，是因为实现 [pushNode](#parse-pushnode) 的时候忘记加上 `__DEV__` 环境检测了，因为生产环境是不需要保存注释节点的，开发环境为了测试需要有这个信息。
+
+```js
+
+function pushNode(nodes, node) {
+  // 这里加上 __DEV__ 检测，开发的时候还是需要的
+  // 不然用例会通不过，因为这里直接返回 Undefined 了，导致
+  // parent.children[] 里面并不存在这个注释节点
+  // 加上就好了
+  if (!__DEV__ && node.type === NodeTypes.COMMENT) {
+    // 注释节点不处理
+    return
+  }
+
+ // ... 省略
+}
+```
+
+
+
+### Interpolation 插值解析
+
+#### <span id="test-interpolation-05"></span>05-custom delimiters
+
+自定义插值分隔符，其实处理流程和插值处理一样，所以没啥好讲的，[阶段代码4](#link-04) 就支持该用例通过。
+
+```js
+
+test('custom delimiters', () => {
+  const ast = baseParse('<p>{msg}</p>', {
+    delimiters: ['{', '}']
+  })
+  const element = ast.children[0]
+  const interpolation = element.children[0]
+
+  expect(interpolation).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      content: `msg`,
+      isStatic: false,
+      isConstant: false,
+      loc: {
+        start: { offset: 4, line: 1, column: 5 },
+        end: { offset: 7, line: 1, column: 8 },
+        source: 'msg'
+      }
+    },
+    loc: {
+      start: { offset: 3, line: 1, column: 4 },
+      end: { offset: 8, line: 1, column: 9 },
+      source: '{msg}'
+    }
+  })
+})
+```
+
+
+
+#### <span id="test-interpolation-04"></span>04-it can have tag-like notation (3)
+
+前面的两个用例已经解释过了，插值里面的内容会在 [parseInterpolation](#parse-parseinterpolation) 中直接处理成插值的模板(source)，不会进入到 while 循环触发异常。
+
+```ts
+
+test('it can have tag-like notation (3)', () => {
+  const ast = baseParse('<div>{{ "</div>" }}</div>')
+  // 这里解析出来的是 <div></div> 这个元素节点
+  const element = ast.children[0] as ElementNode 
+  // 标签内部的所有内容在解析之后会被当做子节点存放到 children[] 数组中
+  // 因此这里第一个子节点是个插值模板
+  const interpolation = element.children[0] as InterpolationNode
+
+  expect(interpolation).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      isStatic: false,
+      // The `isConstant` is the default value and will be determined in `transformExpression`.
+      isConstant: false,
+      content: '"</div>"',
+      loc: {
+        start: { offset: 8, line: 1, column: 9 },
+        end: { offset: 16, line: 1, column: 17 },
+        source: '"</div>"'
+      }
+    },
+    loc: {
+      start: { offset: 5, line: 1, column: 6 },
+      end: { offset: 19, line: 1, column: 20 },
+      source: '{{ "</div>" }}'
+    }
+  })
+})
+```
+
+
+
+#### <span id="test-interpolation-03"></span>03-it can have tag-like notation(2)
+
+这个用例其实和 [用例2](#test-interpolation-02) 是一样的，只不过是解析了两个插值而已，先解析 `{{ a<b }}` ，最后剩下的 `{{ c>d }}` 会在退出 [parseInterpolation](#parse-parseinterpolation) 之后剩余的 context.source 为 `{{ c>d }}`在 [parseChildren](#parse-parsechildren) 里面继续进行 while 循环处理，随又检测到是插值再次调用 `parseInterpolation` 进行处理得到第二个插值节点。
+
+```ts
+
+test('it can have tag-like notation (2)', () => {
+  const ast = baseParse('{{ a<b }}{{ c>d }}')
+  const interpolation1 = ast.children[0] as InterpolationNode
+  const interpolation2 = ast.children[1] as InterpolationNode
+
+  expect(interpolation1).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      content: `a<b`,
+      isStatic: false,
+      isConstant: false,
+      loc: {
+        start: { offset: 3, line: 1, column: 4 },
+        end: { offset: 6, line: 1, column: 7 },
+        source: 'a<b'
+      }
+    },
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 9, line: 1, column: 10 },
+      source: '{{ a<b }}'
+    }
+  })
+
+  expect(interpolation2).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      isStatic: false,
+      isConstant: false,
+      content: 'c>d',
+      loc: {
+        start: { offset: 12, line: 1, column: 13 },
+        end: { offset: 15, line: 1, column: 16 },
+        source: 'c>d'
+      }
+    },
+    loc: {
+      start: { offset: 9, line: 1, column: 10 },
+      end: { offset: 18, line: 1, column: 19 },
+      source: '{{ c>d }}'
+    }
+  })
+}
+```
+
+[支持该用例代码链接🛬](#link-04)
+
+#### <span id="test-interpolation-02"></span>02-it can have tag-like notation(1)
+
+该用例里面虽然有 `<` 符号，但是由于是在插值内部，会进入 [parseInterpolation](#parse-parseinterpolation) 之后就被解析成插值的 source，并不会进入 while 里面的作为标签的开始 `<` 来解析。
+
+```js
+
+test('it can have tag-like notation', () => {
+  const ast = baseParse('{{ a<b }}')
+  const interpolation = ast.children[0]
+
+  expect(interpolation).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      content: `a<b`, // content = preTrimContent.trim() 去掉前后空格
+      isStatic: false,
+      isConstant: false,
+      loc: {
+        start: { offset: 3, line: 1, column: 4 },
+        end: { offset: 6, line: 1, column: 7 },
+        source: 'a<b'
+      }
+    },
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 9, line: 1, column: 10 },
+      source: '{{ a<b }}'
+    }
+  })
+})
+```
+
+[通过该用例代码链接🛬](#link-04)
+
+
+
+#### <span id="test-interpolation-01"></span> 01- simple interpolation
+
+```js
+
+test('simple interpolation', () => {
+  const ast = baseParse('{{message}}')
+  const interpolation = ast.children[0]
+
+  expect(interpolation).toStrictEqual({
+    type: NodeTypes.INTERPOLATION,
+    content: {
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      content: `message`,
+      isStatic: false,
+      isConstant: false,
+      loc: {
+        start: { offset: 2, line: 1, column: 3 }, // m 位置
+        end: { offset: 9, line: 1, column: 10 }, // 最后一个 e 位置
+        source: `message`
+      }
+    },
+    loc: {
+      start: { offset: 0, line: 1, column: 1 }, // 第一个 { 位置
+      end: { offset: 11, line: 1, column: 12 }, // 最后一个 } 位置
+      source: '{{message}}'
+    }
+  })
+}
+```
+
+
+
 ### Text 文本解析
+
+#### <span id="test-text-06"></span> 07-lonly "{{" don\'t separate nodes
+
+这个用例是用来检测插值不完整的情况，正常会爆出 `X_MISSING_INTERPOLATION_END` 异常，在该用例中重写了该异常处理，因此不会报错，用例会很顺利通过，因为没有异常， [parseInterpolation](#parse-parseinterpolation) 会退出，最后 `{{` 会被当做普通文本内容处理。
+
+```js
+test('lonly "{{" don\'t separate nodes', () => {
+  const ast = baseParse('a {{ b', {
+    onError: (error) => {
+      if (error.code !== ErrorCodes.X_MISSING_INTERPOLATION_END) {
+        throw error
+      }
+    }
+  })
+  const text = ast.children[0]
+
+  expect(text).toStrictEqual({
+    type: NodeTypes.TEXT,
+    content: 'a {{ b',
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 6, line: 1, column: 7 },
+      source: 'a {{ b'
+    }
+  })
+}) // lonly "{{" don\'t separate nodes
+```
+
+[parseInterpolation](#parse-parseInterpolation) 该用例处理代码：
+
+```js
+
+function parseInterpolation(context, mode) {
+  // 找出插值模板的开始和结束符号，默认是 {{ 和 }}
+  const [open, close] = context.options.delimiters
+  const closeIndex = context.source.indexOf(close, open.length)
+  if (closeIndex === -1) {
+    // 这里检测到没有 }} 退出，并且到这里 context 指针信息并没有改变
+    // 因此退出之后，重新 while 最后进入文本解析 parseText
+    emitError(context, ErrorCodes.X_MISSING_INTERPOLATION_END)
+    return undefined
+  }
+
+  // ... 省略
+}
+```
+
+test:
+
+```
+➜  packages git:(master) ✗ jest compiler-core
+ PASS  compiler-core/__tests__/parse.spec.js (19.233 s)
+  compiler: parse
+    Text
+      ✓ simple text (5 ms)
+      ✓ simple text with invalid end tag (2 ms)
+      ✓ text with interpolation (1 ms)
+      ✓ text with interpolation which has `<` (1 ms)
+      ✓ text with mix of tags and interpolations (1 ms)
+      ✓ lonly "<" don't separate nodes (7 ms)
+      ✓ lonly "{{" don't separate nodes
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        23.277 s
+Ran all test suites matching /compiler-core/i
+```
+
+
 
 #### <span id="test-text-05"></span> 06-lonly "<" don\'t separate nodes
 
@@ -876,6 +1309,75 @@ baseParse 之后的 ast 结构：
 
 ![parseChildren-支持纯文本解析](http://qiniu.ii6g.com/parse-ts-parsechildren-text-part.png?imageMogr2/thumbnail/!100p)
 
+## <span id="parse-parsecomment"></span>parseComment(context)
+
+注释处理函数，解析原则是匹配 `<!--` 开头和 `-->` 结尾，中间部分统统视为注释，中间需要考虑嵌套注释问题。
+
+```js
+
+function parseComment(context) /* CommentNode */ {
+  const start = getCursor(context)
+  let content
+
+  const match = /--(\!)?>/.exec(context.source)
+  if (!match) {
+    // 没有闭合注释，后面的所有都会被当做注释处理
+    content = context.source.slice(4)
+    advanceBy(context, context.source.length) // 后面所有的都成为注释
+    emitError(context, ErrorCodes.EOF_IN_COMMENT)
+  } else {
+    console.log(match)
+    if (match.index <= 3) {
+      // 空注释也报错
+      emitError(context, ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT)
+    }
+
+    // 非法结束，比如： <!-xx--!>，正则里面有个 (\!)? 捕获组
+    // match[1] 就是指这个匹配
+    if (match[1]) {
+      emitError(context, ErrorCodes.INCORRECTLY_CLOSED_COMMENT)
+    }
+
+    // 取注释内容，match.index 即 /--(\!)?>/ 正则匹配的开始索引位置
+    content = context.source.slice(4, match.index)
+
+    // 嵌套注释??? 这里slice 之后的 s 不包含结束 -->
+    const s = context.source.slice(0, match.index)
+    let prevIndex = 1,
+      nestedIndex = 0
+
+    console.log({ s })
+    // 首先能进入 parseComment，说明 source 是以 <!-- 开头的，且是包含 --> 的
+    // 否则前面就会出现异常，因此如果嵌套那可能情况只有<!--x<!--y-->注释中间
+    // 出现过 <!--
+    while ((nestedIndex = s.indexOf('<!--', prevIndex)) !== -1) {
+      console.log({ nestedIndex, prevIndex, s, len: s.length })
+      advanceBy(context, nestedIndex - prevIndex + 1)
+      // + 4 值是 `<!--`.length，如果小于 s.length，说明嵌套了注释
+      if (nestedIndex + 4 < s.length) {
+        // 非法嵌套, 如：<!--<!--x-->
+        emitError(context, ErrorCodes.NESTED_COMMENT)
+      }
+
+      /// 然后定位到嵌套的第一个 <!-- 的 ! 索引上，进入下一轮处理，直
+      // 到找到最后一个合法的 <!--
+      prevIndex = nestedIndex + 1
+    }
+
+    // 这里应该是没嵌套的情况？？？
+    advanceBy(context, match.index + match[0].length - prevIndex + 1)
+  }
+
+  return {
+    type: NodeTypes.COMMENT,
+    content,
+    loc: getSelection(context, start)
+  }
+}
+```
+
+
+
 ## <span id="parse-parseelement"></span>parseElement(context, mode)
 
 这个解析函数，用来解析 `<div>` 标签。
@@ -1110,7 +1612,7 @@ if (startsWithEndTagOpen(context.source, element.tag)) {
 
 这里也没什么好解释的，插值在 [parseInterpolation](#parse-parseinterpolation) 处分析过了，文本解析在 [parseText](#parse-parsetext) 处分析了。
 
-## <span id="parse-parseInterpolation"></span>parseInterpolation(context, mode)
+## <span id="parse-parseinterpolation"></span>parseInterpolation(context, mode)
 
 函数声明：
 
