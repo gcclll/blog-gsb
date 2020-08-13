@@ -1,5 +1,5 @@
 ---
-title: Vue3.0 源码之 Compiler-core【DOING】
+title: Vue3.0 源码系列 02 -- Compiler-core【DOING】
 slug: vue-compiler-core
 date: 2020-06-18
 cover: ./cover.jpg
@@ -12,20 +12,28 @@ tags:
     - vue3.0
 ---
 
-
+> 该系列文章，均以测试用例通过为基准一步步实现一个 vue3 源码副本(学习)。
+>
+> 重点关注：
+>
+> 1. 各功能木块流程图”[飞机票🛬](#flowchart-list)“，无图无真相系列🆎🆎🆎🆎。
 
 # 阶段代码记录
 
-1. <span id="link-01"></span>[text01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-01-some-text)
-2. <span id="link-02"></span>[text02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-01)
-3. <span id="link-03"></span>[text02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-02)
-4. <span id="link-04"></span>[text03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)
-5. <span id="link-05"></span>[text04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)
-6. <span id="link-06"></span>[comment: <!--x-->注释解析代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/comment-test)
+1. [text01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-01-some-text)<span id="link-01"></span>
+2. [text02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-01)<span id="link-02"></span>
+3. [text02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-02)<span id="link-03"></span>
+4. [text03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-04"></span>
+5. [text04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-05"></span>
+6. [comment: <!--x-->注释解析代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/comment-test)<span id="link-06"></span>
+
+
 
 # 问题/疑问列表
 
-1. <font color="red">为什么 [parseTag](#parse-parsetag) 解析 `<div>` 之后只会得到 `<div` 而不会将 `>` 解析进去？[🛫](#parse-parseelement)</font>
+1. <font color="red">如何区分内置标签|内置组件|核心组件|自定义组件？[🛫](#parse-parsetag-04)</font>
+   
+2. <font color="red">为什么 [parseTag](#parse-parsetag) 解析 `<div>` 之后只会得到 `<div` 而不会将 `>` 解析进去？[🛫](#parse-parseelement)</font>
    答：是因为我们漏掉实现了一部分代码，自闭合标签的检测，移动指针(2/1位)
 
    ```js
@@ -55,7 +63,7 @@ tags:
    }
    ```
 
-2. <font color="red">为什么 [parseElement](#parse-parseelement) 解析 children 的时候先 ancestors.push(element) 解析之后又 pop() 掉？
+3. <font color="red">为什么 [parseElement](#parse-parseelement) 解析 children 的时候先 ancestors.push(element) 解析之后又 pop() 掉？
    </font>
    答：要回到这个问题要从 parseChildren 和 parseElement 两个函数结合来看，如下代码分析
 
@@ -115,13 +123,198 @@ compiler-core 模块的测试用例包含以下部分，将依次进行分析：
 
 ### Element 元素标签解析
 
-<span id="test-element-02"></span>02-empty div
+#### 05-template element with directives
 
-#### <span id="test-element-01"></span>01-simple div
+<span id="test-element-05"></span>
+
+这个用例开始模板的解析。
+
+```js
+
+test('template element with directives', () => {
+  const ast = baseParse('<template v-if="ok"></template>')
+  const element = ast.children[0]
+  expect(element).toMatchObject({
+    type: NodeTypes.ELEMENT,
+    tagType: ElementTypes.TEMPLATE
+  })
+}
+```
+
+`baseParse('<template v-if="ok"></template>')` 解析之后的结构：
+
+```json
+{
+    "type":0,
+    "children":[
+        { // <template> 节点
+            "type":1,
+            "ns":0,
+            "tag":"template",
+            "tagType":3,
+            "props":[
+                {
+                    "type":7, // DIRECTIVE
+                    "name":"if",
+                    "exp":{
+                        "type":4, // SIMPLE_EXPRESSION
+                        "content":"ok",
+                        "isStatic":false,
+                        "isConstant":false,
+                        "loc":{
+                            // ... 省略
+                        }
+                    },
+                    "modifiers":[
+											 // 修饰符
+                    ],
+                    "loc":{
+                        // 省略
+                        "source":"v-if="ok""
+                    }
+                }
+            ],
+            // ... 省略
+        }
+    ],
+    // ... 省去
+}
+```
+
+为了能解析出 `v-if="ok"` 我们需要去实现 [parseAttributes(context, type)](#parse-parseattributes) -> [parseAttribute](#parse-parseattribute) -> [parseAttributeValue](#parse-parseattributevalue)
+
+该用例考察的其实并不是 `<template>` 模板标签解析，而是标签上的属性解析，对普通的 `<div>` 标签依然可以解析出属性 props[]。
+
+#### 04-void element
+
+<span id="test-element-04"></span>
+
+空标签解析，如：`<img>` 
+
+前提是提供了 `isVoidTag()` 选项。
+
+```js
+
+test('void element', () => {
+  const ast = baseParse('<img>after', {
+    isVoidTag: (tag) => tag === 'img'
+  })
+  const element = ast.children[0]
+
+  expect(element).toStrictEqual({
+    type: NodeTypes.ELEMENT,
+    ns: Namespaces.HTML,
+    tag: 'img',
+    tagType: ElementTypes.ELEMENT,
+    codegenNode: undefined,
+    props: [],
+
+    isSelfClosing: false,
+    children: [],
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 5, line: 1, column: 6 },
+      source: '<img>'
+    }
+  })
+}
+```
+
+该用例和[自闭标签](#test-element-03)类似都是在 [parseTag](#parse-parsetag) 解析完之后在 [parseElement](#parse-parseelement) 中结束解析，不同点在于调用 [baseParse](#parse-baseparse) 的时候需要传递一个包含 `isVoidTag()` 的选项 `{ isVoidTag: tag => tag === 'img'}` 用来告诉解析器什么样的标签属于空标签，即不是 `<img/>` 也不是 `<div></div>` 类型。
+
+[parseElement](#parse-parseelement) 中解析条件：
+
+```js
+parseElement(context, ancestors) {
+  // ... parseTag 中解析 <img ...>
+  // 自闭合的到这里就可以结束了
+  if (element.isSelfClosing || context.options.isVoidTag?.(element.tag)) {
+    return element
+  }
+  // ...
+}
+```
+
+
+
+#### 03-self closing
+
+<span id="test-element-03"></span>
+
+```js
+
+test('self closing', () => {
+  const ast = baseParse('<div/>after')
+  const element = ast.children[0]
+
+  expect(element).toStrictEqual({
+    type: NodeTypes.ELEMENT,
+    ns: Namespaces.HTML,
+    tag: 'div',
+    tagType: ElementTypes.ELEMENT,
+    codegenNode: undefined,
+    props: [],
+
+    isSelfClosing: true,
+    children: [],
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 6, line: 1, column: 7 },
+      source: '<div/>'
+    }
+  })
+}
+```
+
+
+
+#### 02-empty div
+
+<span id="test-element-02"></span>
+
+和 [01-simple div](#test-element-01) 一样，无非就是没有 `children[]` 子节点了。在 [parseElement](#parse-parseelement) -> [parseTag](#parse-parsetag) 解析就结束了。
+
+```js
+
+test('empty div', () => {
+  const ast = baseParse('<div></div>')
+  const element = ast.children[0]
+
+  expect(element).toStrictEqual({
+    type: NodeTypes.ELEMENT,
+    ns: Namespaces.HTML,
+    tag: 'div',
+    tagType: ElementTypes.ELEMENT,
+    codegenNode: undefined,
+    props: [],
+    isSelfClosing: false,
+    children: [],
+    loc: {
+      start: { offset: 0, line: 1, column: 1 },
+      end: { offset: 11, line: 1, column: 12 },
+      source: '<div></div>'
+    }
+  })
+}
+```
+
+
+
+#### 01-simple div
+
+<span id="test-element-01"></span>
 
 解析结果流程图(xmind 画流程图真实low的不行，😅)：
 
 ![](http://qiniu.ii6g.com/parse-test-element--01.png?imageMogr2/thumbnail/!100p)
+
+drawer.io 流程图：
+
+![](http://qiniu.ii6g.com/test-parse-simple-tag.png?imageMogr2/thumbnail/!100p)
+
+
+
+
 
 因为 [parseElement](#parse-parseelement) 已经实现，因此这个顺利通过，`parseElement` 解析先检测 `</div>` 结束标签位置，如果没有则为非法无结束标签触发 `ErrorCodes.EOF_IN_TAG` 异常。
 
@@ -276,7 +469,9 @@ function pushNode(nodes, node) {
 
 ### Interpolation 插值解析
 
-#### <span id="test-interpolation-05"></span>05-custom delimiters
+#### 05-custom delimiters
+
+<span id="test-interpolation-05"></span>
 
 自定义插值分隔符，其实处理流程和插值处理一样，所以没啥好讲的，[阶段代码4](#link-04) 就支持该用例通过。
 
@@ -313,7 +508,9 @@ test('custom delimiters', () => {
 
 
 
-#### <span id="test-interpolation-04"></span>04-it can have tag-like notation (3)
+#### 04-it can have tag-like notation (3)
+
+<span id="test-interpolation-04"></span>
 
 前面的两个用例已经解释过了，插值里面的内容会在 [parseInterpolation](#parse-parseinterpolation) 中直接处理成插值的模板(source)，不会进入到 while 循环触发异常。
 
@@ -352,7 +549,9 @@ test('it can have tag-like notation (3)', () => {
 
 
 
-#### <span id="test-interpolation-03"></span>03-it can have tag-like notation(2)
+#### 03-it can have tag-like notation(2)
+
+<span id="test-interpolation-03"></span>
 
 这个用例其实和 [用例2](#test-interpolation-02) 是一样的，只不过是解析了两个插值而已，先解析 `{{ a<b }}` ，最后剩下的 `{{ c>d }}` 会在退出 [parseInterpolation](#parse-parseinterpolation) 之后剩余的 context.source 为 `{{ c>d }}`在 [parseChildren](#parse-parsechildren) 里面继续进行 while 循环处理，随又检测到是插值再次调用 `parseInterpolation` 进行处理得到第二个插值节点。
 
@@ -407,7 +606,9 @@ test('it can have tag-like notation (2)', () => {
 
 [支持该用例代码链接🛬](#link-04)
 
-#### <span id="test-interpolation-02"></span>02-it can have tag-like notation(1)
+#### 02-it can have tag-like notation(1)
+
+<span id="test-interpolation-02"></span>
 
 该用例里面虽然有 `<` 符号，但是由于是在插值内部，会进入 [parseInterpolation](#parse-parseinterpolation) 之后就被解析成插值的 source，并不会进入 while 里面的作为标签的开始 `<` 来解析。
 
@@ -443,7 +644,9 @@ test('it can have tag-like notation', () => {
 
 
 
-#### <span id="test-interpolation-01"></span> 01- simple interpolation
+####  01- simple interpolation
+
+<span id="test-interpolation-01"></span>
 
 ```js
 
@@ -477,7 +680,9 @@ test('simple interpolation', () => {
 
 ### Text 文本解析
 
-#### <span id="test-text-06"></span> 07-lonly "{{" don\'t separate nodes
+####  07-lonly "{{" don\'t separate nodes
+
+<span id="test-text-06"></span>
 
 这个用例是用来检测插值不完整的情况，正常会爆出 `X_MISSING_INTERPOLATION_END` 异常，在该用例中重写了该异常处理，因此不会报错，用例会很顺利通过，因为没有异常， [parseInterpolation](#parse-parseinterpolation) 会退出，最后 `{{` 会被当做普通文本内容处理。
 
@@ -547,7 +752,9 @@ Ran all test suites matching /compiler-core/i
 
 
 
-#### <span id="test-text-05"></span> 06-lonly "<" don\'t separate nodes
+####  06-lonly "<" don\'t separate nodes
+
+<span id="test-text-05"></span>
 
 ```js
 
@@ -597,7 +804,9 @@ test('lonly "<" don\'t separate nodes', () => {
 }
 ```
 
-#### <span id="test-text-05"></span> 05-text with mix of tags and interpolations
+####  05-text with mix of tags and interpolations
+
+<span id="test-text-05"></span>
 
 ```ts
 
@@ -679,7 +888,9 @@ Ran all test suites matching /compiler-core/i.
 
 解决方案：[是 core-js 降级到 2](https://github.com/babel/babel/issues/9796)
 
-#### <span id="test-text-04"></span>04-text with interpolation which has `<`
+#### 04-text with interpolation which has `<`
+
+<span id="test-text-04"></span>
 
 ```ts
 
@@ -745,7 +956,9 @@ function parseInterpolation(
 
 
 
-#### <span id="test-text-03"></span>03-text with interpolation
+#### 03-text with interpolation
+
+<span id="test-text-03"></span>
 
 [该用例代码链接 ->](#link-04)
 
@@ -816,7 +1029,9 @@ Ran all test suites matching /parse.spec/i.
 
 
 
-#### <span id="test-text-02"></span>02-simple text\<div>
+#### 02-simple text\<div>
+
+<span id="test-text-02"></span>
 
 [该用例代码链接->](#link-03)
 
@@ -1100,9 +1315,13 @@ test('simple text', () => {
 
 
 
-# <span id="file-parse"></span>parse.ts
+# parse.ts
+
+<span id="file-parse"></span>
 
 ## baseParse(context, options)
+
+<span id="parse-baseparse"></span>
 
 ```js
 function baseParse(content, options /* ParserOptions */) /*RootNode*/ {
@@ -1127,7 +1346,9 @@ baseParse 内部实现基本就是调用其他方法，所以接下来我们得�
 
 ![](http://qiniu.ii6g.com/parse-ts-baseparse-0.png?imageMogr2/thumbnail/!100p)
 
-## createParseContext(context, options)，
+## createParseContext(context, options)
+
+<span id="parse-createparsecontext"></span>
 
 函数作用：**创建解析器上下文对象(包含解析过程中的一些记录信息)**
 
@@ -1161,7 +1382,9 @@ function createParserContext(
 
 ## 
 
-## <span id="parse-parsechildren"></span>parseChildren(context, mode, ancestors)
+## parseChildren(context, mode, ancestors)
+
+<span id="parse-parsechildren"></span>
 
 ```js
 function parseChildren(
@@ -1309,7 +1532,9 @@ baseParse 之后的 ast 结构：
 
 ![parseChildren-支持纯文本解析](http://qiniu.ii6g.com/parse-ts-parsechildren-text-part.png?imageMogr2/thumbnail/!100p)
 
-## <span id="parse-parsecomment"></span>parseComment(context)
+## parseComment(context)
+
+<span id="parse-parsecomment"></span>
 
 注释处理函数，解析原则是匹配 `<!--` 开头和 `-->` 结尾，中间部分统统视为注释，中间需要考虑嵌套注释问题。
 
@@ -1378,7 +1603,9 @@ function parseComment(context) /* CommentNode */ {
 
 
 
-## <span id="parse-parseelement"></span>parseElement(context, mode)
+## parseElement(context, mode)
+
+<span id="parse-parseelement"></span>
 
 这个解析函数，用来解析 `<div>` 标签。
 
@@ -1612,7 +1839,9 @@ if (startsWithEndTagOpen(context.source, element.tag)) {
 
 这里也没什么好解释的，插值在 [parseInterpolation](#parse-parseinterpolation) 处分析过了，文本解析在 [parseText](#parse-parsetext) 处分析了。
 
-## <span id="parse-parseinterpolation"></span>parseInterpolation(context, mode)
+## parseInterpolation(context, mode)
+
+<span id="parse-parseinterpolation"></span>
 
 函数声明：
 
@@ -1803,9 +2032,13 @@ __proto__: Array(0)
 
 <font color="blue">PS: 对于 foo 和 bar 变量数据解析执行结果这块暂时不讨论，也不知道如何做到的，现阶段只关心模板的解析。</font>
 
-## <span id="parse-parsetag"></span>parseTag(context, type, parent)
+## parseTag(context, type, parent)
 
-### 阶段一(`simple text</div>`)
+<span id="parse-parsetag"></span>
+
+### 阶段一([simple text<\/div>](#test-text-02))
+
+<span id="parse-parsetag-01"></span>
 
 1. 为什么只匹配 `</div` 而忽略掉最后一个 `>`???
 
@@ -1840,7 +2073,9 @@ function parseTag(context, type, parent) {
 }
 ```
 
-### 阶段二([test-05](#test-text-05))
+### 阶段二([test-text-05](#test-text-05))
+
+<span id="parse-parsetag-02"></span>
 
 满足用例 5(`some <span>{{ foo < bar + foo }} text</span>`) 的代码实现，这里只需要能解析 `<span> ... </span>` 标签就可以，没有 `pre`,`v-pre`,`<span/>自闭合标签`，因此下面省略这几部分检测代码。
 
@@ -1922,7 +2157,171 @@ else if (/[a-z]/i.test(s[2])) {
 
 因此如果这里不会触发 X_INVALID_END_TAG 那必定是 parseElement 里面做了什么处理，这个实现了 parseElement 才得以知晓(目前只是猜测~~~)，[传送门 🚪>>>](#parse-parseelement)
 
-## <span id="parse-parsetext"></span>parseText(context, mode)
+### 阶段三([test-element-03](#test-element-03))
+
+<span id="parse-parsetag-03"></span>
+
+支持自闭标签解析，实现了阶段二之后，这里其实很简单，在上一阶段中的实现在 parseTag 中返回的时候 `isSelfClosing` 写死成了 `false` ，要支持这个用例，只要将它的值赋值为实际的 `isSelfClosing` 就可以了。
+
+```js
+parseTag() {
+  // ...
+  let isSelfClosing = false
+  if (context.source.length === 0) {
+    emitError(context, ErrorCodes.EOF_IN_TAG)
+  } else {
+    // some <div> ... </div> 到这里的 source = > ... </div>
+    // 所以可以检测是不是以 /> 开头的
+    isSelfClosing = context.source.startsWith('/>')
+    if (type === TagType.End && isSelfClosing) {
+      emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+    }
+    // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
+    // 到这里 source = ... </div>
+    advanceBy(context, isSelfClosing ? 2 : 1)
+  }
+  // ...
+}
+```
+
+### 阶段四(支持template + v-if)
+
+<span id="parse-parsetag-04"></span>
+
+```js
+
+function parseTag(context, type, parent) {
+  // 获取当前解析的起始位置，此时值应该是 some text 的长度
+  const start = getCursor(context)
+  // 匹配 <div 或 </div 过滤掉空格字符，但是为什么要把 > 给忽略掉???
+  // 其实不是忽略掉 > 而是因为如果是 <div 开头，那么后面有可能是 < 或
+  // /> 后面需要处理闭合和非闭合问题
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)
+  const tag = match[1]
+  const ns = context.options.getNamespace(tag, parent)
+  // log1: 改变位移，将 offset 定位到 </div> 的最有一个 > 上
+  // 在这里 context.offset = 10, context.line = 1
+  advanceBy(context, match[0].length)
+  // 过滤掉空格
+  advanceSpaces(context)
+  // log2: 经过 advance之后 context.offset = 15, context.line = 1
+  // 正好过滤 </div 5个字符
+  const cursor = getCursor(context)
+  const currSource = context.source
+
+  // 解析标签元素的属性
+  let props = parseAttributes(context, type)
+
+  // TODO-2 in pre ...
+
+  // TODO-3 v-pre 指令
+
+ // ....
+
+  let tagType = ElementTypes.ELEMENT
+  const options = context.options
+  // 不是 v-pre，且不是自定义组件，这个 if 目的是为了检测并改变
+  // tagType 标签类型
+  // TODO-4 检测 tagType
+  if (!context.inVPre && !options.isCustomElement(tag)) {
+    // 是否有 is 指令？
+    const hasVIs = props.some(
+      (p) => p.type === NodeTypes.DIRECTIVE && p.name === 'is'
+    )
+
+    if (options.isNativeTag && !hasVIs) {
+      // 没有 is 指令，且不是原生标签，那就是自定义的组件了
+      if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT
+    } else if (
+      hasVIs ||
+      isCoreComponent(tag) ||
+      options.isBuiltInComponent?.(tag) ||
+      /^[A-Z]/.test(tag) ||
+      tag === 'component'
+    ) {
+      // 有 is 指令 || vue 核心组件(keep-alive...) || 内置组件
+      // || 标签名大写开头
+      tagType === ElementTypes.COMPONENT
+    }
+
+    if (tag === 'slot') {
+      tagType === ElementTypes.SLOT
+    } else if (
+      tag === 'template' &&
+      props.some(
+        (p) =>
+          p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
+      )
+    ) {
+      // 是模板的前提是有指令，并且是特殊的模板指令
+      tagType = ElementTypes.TEMPLATE
+    }
+  }
+
+  const val = {
+    type: NodeTypes.ELEMENT,
+    ns,
+    tag,
+    tagType,
+    props: [], // TODO
+    isSelfClosing,
+    children: [],
+    loc: getSelection(context, start),
+    codegenNode: undefined
+  }
+  return val
+}
+```
+
+这里的实现涉及到几个新的函数：
+
+1. `options.isCustomElement(tag)` 默认在 options 里面是 `NO`
+
+2. `options.isNativeTag(tag)` 作为可选 `OptionalOptions` 选项类型，并没默认值
+
+3. `isCoreComponent(tag)` vue 内部作为核心组件的标签
+
+   ```json
+   { // 主要就这四个
+     Teleport: TELEPORT,
+     Suspense: SUSPENSE,
+     KeepAlive: KEEP_ALIVE,
+     BaseTransition: BASE_TRANSITION
+   }
+   ```
+
+4. `options.isBuiltInComponent?.(tag) `  和 `isNativeTag` 一样作为可选选项，无默认值
+
+5. `isSpecialTemplateDirective(p.name)` 特殊的模板指令
+
+   ```ts
+   const isSpecialTemplateDirective = /*#__PURE__*/ makeMap(
+     `if,else,else-if,for,slot`
+   )
+   ```
+
+从上面的代码可以看出，如果要被定义为是 `<template>` 类型必须包含 `if,else,else-if,for,slot` 这其中的任一个指令属性，判断条件：
+
+```js
+if (
+  tag === 'template' &&
+  props.some(
+    (p) =>
+    // isSpecialTemplateDirective 是使用 makeMap 创建的函数
+    // 即 key => true/false 的一些函数
+    p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
+  )
+) {
+  // 是模板的前提是有指令，并且是特殊的模板指令(if, else, else-if, slot, for)
+  tagType = ElementTypes.TEMPLATE
+}
+```
+
+
+
+## parseText(context, mode)
+
+<span id="parse-parsetext"></span>
 
 解析文本节点，直到遇到结束标记(`<`,`{{`,`]]>`)。
 
@@ -1964,6 +2363,8 @@ function parseText(context: ParserContext, mode: TextModes): TextNode {
 ![parse-text-导图](http://qiniu.ii6g.com/parse-ts-parsetext.png?imageMogr2/thumbnail/!100p)
 
 ## parseTextData(context, length, mode)
+
+<span id="parse-parsetextdata"></span>
 
 文本节点可能包含数据，通过 *context.options.decodeEntities(???)* 来解析。
 
@@ -2017,7 +2418,279 @@ function parseTextData(
 
 导图：![parse-textd-ata](http://qiniu.ii6g.com/parse-ts-parsetextdata.png?imageMogr2/thumbnail/!100p)
 
-## <span id="parse-pushnode"></span>pushNode(nodes, node)
+## parseAttributes(context, type)
+
+<span id="parse-parseattributes"></span>
+
+这个是解析整个标签的所有属性，因此该属性只是做了一些非法情况的检测，实际真正解析属性的地方在 [parseAttribute](#parse-parseattribute) 里面。
+
+```js
+
+// 解析标签所有属性
+function parseAttributes(context, type) {
+  const props = []
+  const attributeNames = new Set()
+  while (
+    context.source.length > 0 &&
+    !context.source.startsWith('>') &&
+    !context.source.startsWith('/>')
+  ) {
+    // 非法属性， <div /v-if="ok"></div>??
+    if (context.source.startsWith('/')) {
+      emitError(context, ErrorCodes.UNEXPECTED_SOLIDUS_IN_TAG)
+      advanceBy(context, 1)
+      advanceSpaces(context)
+      continue
+    }
+
+    // </div> 结束标签，以属性结束的标签?
+    if (type === TagType.End) {
+      emitError(context, ErrorCodes.END_TAG_WITH_ATTRIBUTES)
+    }
+
+    // 逐个解析属性
+    const attr = parseAttribute(context, attributeNames)
+    if (type === TagType.Start) {
+      props.push(attr)
+    }
+
+    if (/^[^\t\r\n\f />]/.test(context.source)) {
+      emitError(context, ErrorCodes.MISSING_WHITESPACE_BETWEEN_ATTRIBUTES)
+    }
+
+    advanceSpaces(context)
+  }
+
+  return props
+}
+```
+
+## parseAttribute(context, nameSet)
+
+<span id="parse-parseattribute"></span>
+
+解析标签属性或指令：
+
+```js
+
+function parseAttribute(context, nameSet) {
+  const start = getCursor(context)
+  const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)
+  const name = match[0]
+
+  if (nameSet.has(name)) {
+    // 重复属性名
+    emitError(context, ErrorCodes.DUPLICATE_ATTRIBUTE)
+  }
+  nameSet.add(name)
+
+  if (name[0] === '=') {
+    // =name=value ?
+    emitError(context, ErrorCodes.UNEXPECTED_EQUALS_SIGN_BEFORE_ATTRIBUTE_NAME)
+  }
+
+  {
+    const pattern = /["'<]/g
+    let m
+    while ((m = pater.exec(name))) {
+      // 不合法的属性名
+      emitError(
+        context,
+        ErrorCodes.UNEXPECTED_CHARACTER_IN_ATTRIBUTE_NAME,
+        m.index
+      )
+    }
+  }
+
+  // 移动指针
+  advanceBy(context, name.length)
+
+  // type: { content, isQuoted, loc }
+  let value
+
+  // 去空格解析属性值
+  if (/^[\t\r\n\f ]*=/.test(context.source)) {
+    // 属性名与 = 之间存在空格的情况，去掉空格
+    advanceSpaces(context)
+    advanceBy(context, 1)
+    advanceSpaces(context)
+    // 去掉空格之后解析属性值
+    value = parseAttributeValue(context)
+    if (!value) {
+      emitError(context, ErrorCodes.MISSING_ATTRIBUTE_VALUE)
+    }
+  }
+
+  const loc = getSelection(context, start)
+
+  // v-dir 或 缩写
+  if (!context.inVPre && /^(v-|:|@|#)/.test(name)) {
+    // ?: 非捕获组
+    // 1. (?:^v-([a-z0-9]+))? -> 匹配 v-dir 指令，非贪婪匹配，捕获指令名
+    //   称([a-z0=9]+)
+    // 2. (?:(?::|^@|^#)([^\.]+))? -> 匹配 :,@,#
+    // 3. (.+)?$ 匹配任意字符
+    const match = /(?:^v-([a-z0-9]+))?(?:(?::|^@|^#)([^\.]+))?(.+)?$/i.exec(
+      name
+    )
+
+    let arg
+
+    // ([a-z0-9]+), ([^\.]+)
+    if (match[2]) {
+      const startOffset = name.indexOf(match[2])
+      const loc = getSelection(
+        context,
+        getNewPosition(context, start, startOffset),
+        getNewPosition(context, start, startOffset + match[2].length)
+      )
+
+      let content = match[2]
+      let isStatic = true // 静态属性名
+
+      // 动态属性名解析
+      if (content.startsWith('[')) {
+        isStatic = false
+
+        if (!content.endsWith(']')) {
+          // 如果是动态属性名，必须是 [varName] 形式
+          emitError(
+            context,
+            ErrorCodes.X_MISSING_DYNAMIC_DIRECTIVE_ARGUMENT_END
+          )
+        }
+
+        content = content.substr(1, content.length - 2)
+      }
+
+      arg = {
+        type: NodeTypes.SIMPLE_EXPRESSION,
+        content,
+        isStatic,
+        isConstant: isStatic,
+        loc
+      }
+    }
+
+    // 属性是否被引号包起来
+    if (value && value.isQuoted) {
+      const valueLoc = value.loc
+      valueLoc.start.offset++
+      valueLoc.start.column++
+      valueLoc.end = advancePositionWithClone(valueLoc.start, value.content)
+      // 取引号内的所有内容
+      valueLoc.source = valueLoc.source.slice(1, -1)
+    }
+
+    return {
+      type: NodeTypes.DIRECTIVE,
+      // : -> v-bind, @ -> v-on, # -> v-slot 的缩写
+      name:
+        match[1] ||
+        (name.startsWith(':') ? 'bind' : name.startsWith('@') ? 'on' : 'slot'),
+      exp: value && {
+        type: NodeTypes.SIMPLE_EXPRESSION,
+        content: value.content,
+        isStatic: false,
+        isConstant: false,
+        loc: value.loc
+      },
+      arg,
+      // 修饰符处理, v-bind.m1.m2 -> .m1.m2 -> ['m1', 'm2']
+      modifiers: match[3] ? match[3].substr[1].split('.') : [],
+      loc
+    }
+  }
+
+  return {
+    type: NodeTypes.ATTRIBUTE,
+    name,
+    value: value && {
+      type: NodeTypes.TEXT,
+      content: value.content,
+      loc: value.loc
+    },
+    loc
+  }
+}
+```
+
+该函数实现主要有几部分(以 `<div v-bind:keyup.enter.prevent="ok"></div>` 为例)：
+
+1. 匹配属性名，关键正则：`/^[^\t\r\n\f />][^\t\r\n\f />=]*/` 会将 `v-if="varname"` 中等号前面的`v-bind:keyup.enter.prevent`都匹配出来。
+2. 将匹配到的属性名收集到 `nameSet[]` 中，检测重复性。
+   <font color="purple">这里需要注意的是，属性名匹配的结果会将变量名，修饰符都匹配到，如：`<div v-bind:keyup.enter.prevent="ok">`，最后 add 到 nameSet 中的完整属性名为：`v-bind:keyup.enter.prevent`。</font>
+3. 非法属性名检测(如：`=name=value`，或属性名中包含 `["'<]` 字符)，异常
+4. 移动指针 `advanceBy(context, name.length)` 定位到属性名后的位置，目的是为了取属性值，剩下：`="ok"`。
+5. 正则：`/^[\t\r\n\f ]*=/`，解析属性值，调用 [parseAttributeValue](#pars-parseattributevalue) 解析出属性值来
+   1. 指针归位至开始位置，如： `v-bind:keyup.enter.prevent="ok"` 的开始位置为 `v` 位置，解析修饰符，得到 `modifiers: []`，这里的关键在于正则：`/(?:^v-([a-z0-9]+))?(?:(?::|^@|^#)([^\.]+))?(.+)?$/i`，会匹配 `v-if, :, @, #...` 指令和指令缩写以及修饰符。
+   2. 解析指令后面的变量名称，如：`keyup`，有可能是动态值 `v-bind:[varname]`。
+   3. 检测属性值有没被引号包起来，如果有，要更新 value.loc，只取引号内的内容 `content.source = valueLoc.source.slice(1, -1)`
+   4. 返回指令节点类型对象
+6. 否则返回普通属性类型节点
+
+## parseAttributeValue(context)
+
+<span id="parse-parseattributevalue"></span>
+
+解析属性值。
+
+```js
+
+function parseAttributeValue(context) {
+  // 保存模板字符串指针起点位置
+  const start = getCursor(context)
+
+  let content
+
+  const quote = context.source[0]
+  const isQuoted = quote === `"` || quote === `'`
+  if (isQuoted) {
+    // 有引号
+    advanceBy(context, 1)
+    const endIndex = context.source.indexOf(quote)
+    // 没有结束引号??? 整个 source 当做文本数据处理???
+    if ((endIndex = -1)) {
+      content = parseTextData(
+        context,
+        context.source.length,
+        TextModes.ATTRIBUTE_VALUE
+      )
+    } else {
+      content = parseTextData(context, endIndex, TextModes.ATTRIBUTE_VALUE)
+      advanceBy(context, 1)
+    }
+  } else {
+    // 没有引号
+    const match = /^[^\t\r\n\f >]+/.exec(context.source)
+    if (!match) {
+      // 无属性值
+      return undefined
+    }
+
+    const unexpectedChars = /["'<=`]/g
+    let m
+    while ((m = unexpectedChars.exec(match[0]))) {
+      // 无引号值中非法字符检测
+      emitError(
+        context,
+        ErrorCodes.UNEXPECTED_CHARACTER_IN_UNQUOTED_ATTRIBUTE_VALUE
+      )
+    }
+
+    // 解析文本数据
+    content = parseTextData(context, match[0].length, TextModes.ATTRIBUTE_VALUE)
+  }
+
+  return { content, isQuoted, loc: getSelection(context, start) }
+}
+```
+
+
+
+## pushNode(nodes, node)
+
+<span id="parse-pushnode"></span>
 
 1. 注释节点不处理
 2. 合并文本节点(前提是prev, node 两个节点是紧挨着的，由 loc.end.offset 和 loc.start.offset判断)
@@ -2054,7 +2727,9 @@ function pushNode(nodes: TemplateChildNode[], node: TemplateChildNode): void {
 
 
 
-## <span id="parse-isend"></span>isEnd(context, mode, ancestors)
+## isEnd(context, mode, ancestors)
+
+<span id="parse-isend"></span>
 
 ```ts
 
@@ -2099,6 +2774,8 @@ function isEnd(
 
 ## getCursor(context)
 
+<span id="parse-getCursor"></span>
+
 ```ts
 
 function getCursor(context: ParserContext): Position {
@@ -2109,7 +2786,9 @@ function getCursor(context: ParserContext): Position {
 
 
 
-## <span id="parse-getselection"></span>getSelection(context, start, end?: Postion)
+## getSelection(context, start, end?: Postion)
+
+<span id="parse-getselection"></span>
 
 取实时解析后的 source，start，end的值。
 
@@ -2132,7 +2811,11 @@ function getSelection(
 
 # ast.ts
 
-## <span id="file-ast-createroot"></span>createRoot(children, loc = locStub)
+<span id="file-ast"></span>
+
+## createRoot(children, loc = locStub)
+
+<span id="ast-createroot"></span>
 
 创建根节点对象，返回一个 [RootNode](#td-ast-rootnode) 类型对象。
 
@@ -2194,6 +2877,8 @@ export function createRoot(
 # utils.ts
 
 ## advancePositionWithMutation(pos,source, numberOfCharacters)
+
+<span id="util-advancepositionwithmutation"></span>
 
 更新context的 line，column，offset的值
 
@@ -2304,7 +2989,9 @@ const decodeMap: Record<string, string> = {
 
 ## ast.ts
 
-### <span id="td-ast-elementnode"></span>ElementNode
+### ElementNode
+
+<span id="td-ast-elementnode"></span>
 
 ```ts
 export type ElementNode =
@@ -2318,7 +3005,9 @@ export type ElementNode =
 
 
 
-### <span id="td-ast-tcn"></span>TemplateChildNode
+### TemplateChildNode
+
+<span id="td-ast-tcn"></span>
 
 模板子孙节点的可能类型组合：
 
@@ -2338,7 +3027,9 @@ export type TemplateChildNode =
 
 
 
-### <span id="td-ast-rootnode"></span>RootNode
+### RootNode
+
+<span id="td-ast-rootnode"></span>
 
 ```ts
 
@@ -2359,7 +3050,9 @@ export interface RootNode extends Node {
 
 
 
-## <span id="td-parser-options"></span>ParserOptions
+## ParserOptions
+
+<span id="td-parser-options"></span>
 
 定义位置：*<font color="purple"> src/options.ts</font>*
 
@@ -2424,7 +3117,9 @@ export interface ParserOptions {
 9. `decodeEntities?: (rawText: string, asAttr: boolean) => string`，仅用于 DOM compilers
 10. `onError?: (error: CompilerError) => void `
 
-## <span id="td-parser-context"></span>ParserContext
+## ParserContext
+
+<span id="td-parser-context"></span>
 
 定义位置：*<font color="purple"> src/parse.ts</font>*
 
@@ -2443,4 +3138,34 @@ export interface ParserContext {
   inVPre: boolean // v-pre 指令，不处理指令和插值(v-xxx, {{...}})
 }
 ```
+
+# 流程图
+
+<span id="flowchart-list"></span>
+
+由于有些流程图挺大的，内容多，因此放到最后。
+
+## 带指令的模板/标签解析
+
+实例：
+
+1. 用例：[05-template element with directives](#test-element-05)
+2. more...
+
+图解：http://qiniu.ii6g.com/test-element-directive.png
+不知道是不是图大了，显示不出来。
+
+![](http://qiniu.ii6g.com/test-element-directive.png)
+
+
+
+
+
+
+
+
+
+
+
+
 

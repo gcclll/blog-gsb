@@ -1,5 +1,5 @@
 ---
-title: Vue3.0 源码之 Reactivity
+title: Vue3.0 源码系列 01 -- Reactivity
 slug: reactivity
 date: 2020-06-16
 cover: ./cover.jpg
@@ -11,6 +11,8 @@ tags:
     - javascript
     - vue3.0
 ---
+
+> 该系列文章，均以测试用例通过为基准一步步实现一个 vue3 源码副本(学习)。
 
 # 简介
 
