@@ -1,0 +1,25 @@
+#+TITLE: 测试用的 gatsbyjs 是否支持 org文件
+
+👤 ZhiCheng Lee <gccll.love@gmail.com>
+
+🏷 pages
+
+📆 [2020-08-22 Sat 18:15]
+
+#+LANGUAGE:  zh-CN
+#+OPTIONS:  H:6 num:nil toc:t \n:nil ::t |:t ^:nil -:nil f:t *:t <:nil
+
+* header
+** header2
+
+table
+| a | b |
+|---+---|
+| c | d |
+
+
+#+begin_src js
+  function test() {
+    console.log('tes gatsbyjs use org file')
+  }
+#+end_src

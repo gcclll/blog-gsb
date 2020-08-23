@@ -13,79 +13,14 @@ tags:
 ---
 
 > 该系列文章，均以测试用例通过为基准一步步实现一个 vue3 源码副本(学习)。
->
-> 重点关注：
->
-> 1. 各功能木块流程图”[飞机票🛬](#flowchart-list)“，无图无真相系列🆎🆎🆎🆎。
 
-# 阶段代码记录
+<font color="#fc02ff">**可能感兴趣列表：**</font>
 
-1. [text01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-01-some-text)<span id="link-01"></span>
-2. [text02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-01)<span id="link-02"></span>
-3. [text02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-02)<span id="link-03"></span>
-4. [text03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-04"></span>
-5. [text04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-05"></span>
-6. [comment: <!--x-->注释解析代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/comment-test)<span id="link-06"></span>
+1. [各种流程图(函数/功能/实现/...)无图无真相系列](#flowchart-list) 🛬 🛬 🛬 🛬 🛬
+2.  [源码相关的疑问/问题列表及其解答](#issues) 🛳 🛳 🛳 🛳 🛳
+3. [阶段性的代码备份(比如能pass某个用例)](#stage-codes) 🚘 🚘 🚘 🚘 🚘
 
 
-
-# 问题/疑问列表
-
-1. <font color="red">如何区分内置标签|内置组件|核心组件|自定义组件？[🛫](#parse-parsetag-04)</font>
-   
-2. <font color="red">为什么 [parseTag](#parse-parsetag) 解析 `<div>` 之后只会得到 `<div` 而不会将 `>` 解析进去？[🛫](#parse-parseelement)</font>
-   答：是因为我们漏掉实现了一部分代码，自闭合标签的检测，移动指针(2/1位)
-
-   ```js
-   function parseTag(context, type) {
-     // .... 省略
-     
-     
-     // TODO-3 <div/> 自闭标签
-     // 这里要实现，不然最后解析完成之后 source 会是：>...</span>
-     // 需要检测下是不是自闭合标签来移动指针位置
-     let isSelfClosing = false
-     if (context.source.length === 0) {
-       emitError(context, ErrorCodes.EOF_IN_TAG)
-     } else {
-       // some <div> ... </div> 到这里的 source = > ... </div>
-       // 所以可以检测是不是以 /> 开头的
-       isSelfClosing = context.source.startsWith('/>')
-       if (type === TagType.End && isSelfClosing) {
-         emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
-       }
-       // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
-       // 到这里 source = ... </div>
-       advanceBy(context, isSelfClosing ? 2 : 1)
-     }
-     
-     // ... 省略
-   }
-   ```
-
-3. <font color="red">为什么 [parseElement](#parse-parseelement) 解析 children 的时候先 ancestors.push(element) 解析之后又 pop() 掉？
-   </font>
-   答：要回到这个问题要从 parseChildren 和 parseElement 两个函数结合来看，如下代码分析
-
-   ```ts
-   // 解析流程(用例5)：
-   // 1. 先 parseChildren(context, mode, ancestors) 
-   // 解析 `some <span>{{ foo < bar + foo }} text</span>`
-   //   1) 首先得到的是 `some ` 文本节点
-   //   2) 检测到 <span> 进入标签解析 parseElement(context, ancestors) 注意这里的 		//				ancestors，是由 parseChildren 继承过来的
-   // 2. 进入 parseElement 解析进程
-   //   	1) 遇到 <span> 解析出标签节点 span
-   //   	2) 在自身函数内检测到标签内还有内容，重新调用 parseChildren(..., ancestors) 
-   //    3) 所以重点来了
-   // ...
-   // ...
-   // ancestors 是 parseChildren 传递过来的，parseElement 里面将
-   // push 的目的：让子节点有所依赖，知道自己的父级是谁，但好像 parseChildren 里面用到 
-   // 		parent 也是为了获取命名空间去用了
-   // pop 的目的：难道是为了不污染 ancestors ???
-   ```
-
-   好像还不是很明确为何要 push->pop。
 
 # 测试用例分析
 
@@ -3139,6 +3074,79 @@ export interface ParserContext {
 }
 ```
 
+# 阶段代码记录
+
+<span id="stage-codes"></span>
+
+1. [text01: some text 的代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-01-some-text)<span id="link-01"></span>
+2. [text02: some text \<div> 01 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-01)<span id="link-02"></span>
+3. [text02: some text \<div> 02 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-02-some-text-div-02)<span id="link-03"></span>
+4. [text03: some {{ foo + bar }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-04"></span>
+5. [text04: some {{ a<b && c>d }} text 代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/text-test-03-interpolation)<span id="link-05"></span>
+6. [comment: <!--x-->注释解析代码备份](https://github.com/gcclll/vue-next-code-read/tree/master/bakups/compiler-core/comment-test)<span id="link-06"></span>
+
+
+
+# 问题/疑问列表
+
+<span id="issues"></span>
+
+1. <font color="red">如何区分内置标签|内置组件|核心组件|自定义组件？[🛫](#parse-parsetag-04)</font>
+
+2. <font color="red">为什么 [parseTag](#parse-parsetag) 解析 `<div>` 之后只会得到 `<div` 而不会将 `>` 解析进去？[🛫](#parse-parseelement)</font>
+   答：是因为我们漏掉实现了一部分代码，自闭合标签的检测，移动指针(2/1位)
+
+   ```js
+   function parseTag(context, type) {
+     // .... 省略
+     
+     
+     // TODO-3 <div/> 自闭标签
+     // 这里要实现，不然最后解析完成之后 source 会是：>...</span>
+     // 需要检测下是不是自闭合标签来移动指针位置
+     let isSelfClosing = false
+     if (context.source.length === 0) {
+       emitError(context, ErrorCodes.EOF_IN_TAG)
+     } else {
+       // some <div> ... </div> 到这里的 source = > ... </div>
+       // 所以可以检测是不是以 /> 开头的
+       isSelfClosing = context.source.startsWith('/>')
+       if (type === TagType.End && isSelfClosing) {
+         emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
+       }
+       // 如果是自闭合指针移动两位(/>)，否则只移动一位(>)
+       // 到这里 source = ... </div>
+       advanceBy(context, isSelfClosing ? 2 : 1)
+     }
+     
+     // ... 省略
+   }
+   ```
+
+3. <font color="red">为什么 [parseElement](#parse-parseelement) 解析 children 的时候先 ancestors.push(element) 解析之后又 pop() 掉？
+   </font>
+   答：要回到这个问题要从 parseChildren 和 parseElement 两个函数结合来看，如下代码分析
+
+   ```ts
+   // 解析流程(用例5)：
+   // 1. 先 parseChildren(context, mode, ancestors) 
+   // 解析 `some <span>{{ foo < bar + foo }} text</span>`
+   //   1) 首先得到的是 `some ` 文本节点
+   //   2) 检测到 <span> 进入标签解析 parseElement(context, ancestors) 注意这里的 		//				ancestors，是由 parseChildren 继承过来的
+   // 2. 进入 parseElement 解析进程
+   //   	1) 遇到 <span> 解析出标签节点 span
+   //   	2) 在自身函数内检测到标签内还有内容，重新调用 parseChildren(..., ancestors) 
+   //    3) 所以重点来了
+   // ...
+   // ...
+   // ancestors 是 parseChildren 传递过来的，parseElement 里面将
+   // push 的目的：让子节点有所依赖，知道自己的父级是谁，但好像 parseChildren 里面用到 
+   // 		parent 也是为了获取命名空间去用了
+   // pop 的目的：难道是为了不污染 ancestors ???
+   ```
+
+   好像还不是很明确为何要 push->pop。
+
 # 流程图
 
 <span id="flowchart-list"></span>
@@ -3152,10 +3160,9 @@ export interface ParserContext {
 1. 用例：[05-template element with directives](#test-element-05)
 2. more...
 
-图解：http://qiniu.ii6g.com/test-element-directive.png
-不知道是不是图大了，显示不出来。
+图片完整地址：http://qiniu.ii6g.com/test-element-directive.png?imageMogr2/thumbnail/!100p
 
-![](http://qiniu.ii6g.com/test-element-directive.png)
+![](http://qiniu.ii6g.com/test-element-directive.png?imageMogr2/thumbnail/!100p)
 
 
 

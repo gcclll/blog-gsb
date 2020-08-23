@@ -70,6 +70,8 @@ const Layout = ({ location, title, children }) => {
         >
           <img src={icon} />
         </a>
+        {` `}
+        <a href="https://beian.miit.gov.cn">粤ICP备20032623号</a>
       </footer>
     </div>
   )
